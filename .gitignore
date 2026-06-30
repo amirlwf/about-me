@@ -1,0 +1,8 @@
+*.mimo
+*.env
+.env
+env
+mimocode
+.mimocode
+.mimocode/
+
