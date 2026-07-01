@@ -9,7 +9,7 @@
     <!-- فونت‌ها -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;700&family=Lalezar&display=swap" rel="stylesheet">
 
     <style>
         /* ===== ریست و تنظیمات پایه ===== */
@@ -77,14 +77,25 @@
         }
 
         .header h1 {
-            font-family: 'Inter', sans-serif;
-            font-size: 1.5rem;
+            font-family: 'Lalezar', 'Vazirmatn', cursive;
+            font-size: 2rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--turquoise), var(--emerald));
+            background: linear-gradient(135deg, #40E0D0, #50C878, #40E0D0);
+            background-size: 200% 200%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            text-shadow: none;
+            filter: drop-shadow(0 0 12px rgba(64, 224, 208, 0.4)) drop-shadow(0 0 30px rgba(80, 200, 120, 0.2));
+            animation: title-glow 4s ease-in-out infinite;
+            letter-spacing: 1px;
+            line-height: 1.8;
+        }
+
+        @keyframes title-glow {
+            0%, 100% { filter: drop-shadow(0 0 12px rgba(64, 224, 208, 0.4)) drop-shadow(0 0 30px rgba(80, 200, 120, 0.2)); background-position: 0% 50%; }
+            50% { filter: drop-shadow(0 0 20px rgba(64, 224, 208, 0.6)) drop-shadow(0 0 50px rgba(80, 200, 120, 0.35)); background-position: 100% 50%; }
         }
 
         .header p {
@@ -102,19 +113,19 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
+            border-radius: 16px;
             overflow: hidden;
-            max-height: 70vh;
+            max-height: 50vh;
         }
 
         /* ===== بخش پیام‌ها ===== */
         .chat-messages {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 14px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
             scrollbar-width: thin;
             scrollbar-color: rgba(255,255,255,0.1) transparent;
         }
@@ -126,10 +137,10 @@
         /* ===== حباب پیام ===== */
         .message {
             max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 18px;
-            font-size: 0.95rem;
-            line-height: 1.6;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            line-height: 1.5;
             animation: msg-in 0.3s ease;
             word-wrap: break-word;
         }
@@ -183,22 +194,22 @@
 
         /* ===== ورودی پیام ===== */
         .chat-input {
-            padding: 16px;
+            padding: 12px;
             background: rgba(0, 0, 0, 0.2);
             border-top: 1px solid var(--glass-border);
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
         .chat-input input {
             flex: 1;
             background: var(--surface);
             border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 12px 16px;
+            border-radius: 10px;
+            padding: 10px 14px;
             color: var(--text-primary);
             font-family: 'Vazirmatn', sans-serif;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             outline: none;
             transition: border-color 0.2s;
         }
@@ -214,11 +225,11 @@
         .chat-input button {
             background: var(--visitor-bubble);
             border: none;
-            border-radius: 12px;
-            padding: 12px 20px;
+            border-radius: 10px;
+            padding: 10px 16px;
             color: #fff;
             font-family: 'Vazirmatn', sans-serif;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.15s, box-shadow 0.2s;
@@ -288,10 +299,10 @@
         /* ===== ریسپانسیو ===== */
         @media (max-width: 560px) {
             .app { padding: 12px; }
-            .chat-box { max-height: 75vh; border-radius: 16px; }
-            .header h1 { font-size: 1.3rem; }
-            .message { max-width: 85%; font-size: 0.9rem; }
-            .chat-input { padding: 12px; }
+            .chat-box { max-height: 55vh; border-radius: 14px; }
+            .header h1 { font-size: 1.7rem; }
+            .message { max-width: 85%; font-size: 0.85rem; padding: 8px 12px; }
+            .chat-input { padding: 10px; }
         }
     </style>
 </head>
@@ -304,7 +315,7 @@
     <!-- اپلیکیشن اصلی -->
     <div class="app">
         <div class="header">
-            <h1>amirlwf</h1>
+            <h1>فعلا خبری نیست جیگر</h1>
             <p>برای ارتباط با من از چت زیر استفاده کنید</p>
         </div>
 
