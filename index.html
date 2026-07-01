@@ -453,7 +453,7 @@
         // ===== تنظیمات =====
         // ⚠️ آدرس اپلیکیشن وب گوگل اپس اسکریپت رو جایگزین کن
         // توکن ربات و آیدی چت داخل اسکریپت گوگل مدیریت می‌شن (امن‌تره)
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwi5GBRMGV5NYh1for890ZzVOpKxo0mvPgLRxdae8wO60JallxQJycfoP8EqPLqOXI/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzo7RO_o1bn-UZz5NMw6vgvwn7DBTLUnH6PEkA6mH2dyqfxDYgBays7UF3xc86LXO0/exec';
 
         // ===== انیمیشن باران ماتریکس =====
         // این تابع یه افکت سبک ماتریکس روی بک‌گراند اجرا می‌کنه
@@ -533,30 +533,27 @@
 
             try {
                 // ارسال درخواست به گوگل اپس اسکریپت
-                // توجه: از no-cors استفاده می‌کنیم چون فایل مستقیماً از روی سیستم باز شده
-                // این کار اجازه می‌ده درخواست بره و پردازش بشه، ولی نمی‌تونیم پاسخ رو بخونیم
+                // از no-cors استفاده می‌کنیم چون Apps Script CORS رو ساپورت نمی‌کنه
+                // در این حالت response همیشه opaque هست و نمی‌تونیم پاسخ واقعی رو بخونیم
+                // ولی درخواست به سرور میرسه و پردازش میشه
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // اضافه کردن no-cors برای فایل‌های محلی
+                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ message: message })
                 });
 
-                // چون از no-cors استفاده می‌کنیم، response همیشه opaque هست
-                // و نمی‌تونیم محتوای اون رو بخونیم
-                // اما درخواست به سمت سرور رفته و پردازش شده
-                // فرض می‌کنیم ارسال موفق بوده (تلگرام پیام رو دریافت کرده)
+                // no-cors = response opaque، ولی اگه به اینجا رسیم یعنی درخواست رفته
                 showStatus('پیامت رسید جیگر 😎', 'success');
-                messageInput.value = ''; // پاک کردن فیلد
+                messageInput.value = '';
 
             } catch (error) {
-                // خطای شبکه (مثلاً قطعی اینترنت)
+                // فقط خطای واقعی شبکه (قطعی اینترنت، DNS، etc)
                 showStatus('خطا در اتصال! اینترنتت رو چک کن.', 'error');
-                console.error('Script Error:', error);
+                console.error('Network Error:', error);
             } finally {
-                // برداشتن حالت لودینگ
                 sendBtn.classList.remove('loading');
                 sendBtn.textContent = '🚀 بفرست';
             }
