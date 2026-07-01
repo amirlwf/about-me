@@ -5,4 +5,7 @@ env
 mimocode
 .mimocode
 .mimocode/
-
+.key
+*test
+test.html
+test_bot.gs
