@@ -30,7 +30,9 @@ function updateVlessRemarks(uri: string, newRemarks: string): string {
     if (hIdx !== -1) { frag = qs.substring(hIdx); qs = qs.substring(0, hIdx) }
     const params = new URLSearchParams(qs)
     params.set("remarks", newRemarks)
-    return base + "?" + params.toString() + frag
+    const encodedNew = encodeURIComponent(newRemarks)
+    const newFragment = frag ? "#" + encodedNew : ""
+    return base + "?" + params.toString() + newFragment
   } catch { return uri }
 }
 
