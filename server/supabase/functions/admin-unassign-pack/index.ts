@@ -1,0 +1,82 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+}
+
+async function verifyAdminSession(supabaseAdmin: any, token: string): Promise<{ valid: boolean; admin_id?: string }> {
+  const encoder = new TextEncoder()
+  const tokenHashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(token))
+  const tokenHash = Array.from(new Uint8Array(tokenHashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("")
+
+  const { data: session, error } = await supabaseAdmin
+    .from("admin_sessions").select("*").eq("token_hash", tokenHash)
+    .gt("expires_at", new Date().toISOString()).single()
+
+  if (error || !session) return { valid: false }
+  return { valid: true, admin_id: session.admin_id }
+}
+
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
+
+  try {
+    const authHeader = req.headers.get("Authorization")
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "احراز هویت مدیر لازم است" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+
+    const token = authHeader.replace("Bearer ", "")
+    const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)
+    const session = await verifyAdminSession(supabaseAdmin, token)
+    if (!session.valid) {
+      return new Response(JSON.stringify({ error: "جلسه مدیر منقضی شده" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+
+    const { pack_id } = await req.json()
+
+    if (!pack_id) {
+      return new Response(JSON.stringify({ error: "شناسه بسته الزامی است" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+
+    // Verify pack exists and is assigned
+    const { data: pack, error: packError } = await supabaseAdmin
+      .from("config_packs")
+      .select("id, pack_name, assigned_to")
+      .eq("id", pack_id)
+      .single()
+
+    if (packError || !pack) {
+      return new Response(JSON.stringify({ error: "بسته مورد نظر یافت نشد" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+
+    if (!pack.assigned_to) {
+      return new Response(JSON.stringify({ error: "این بسته تخصیص داده نشده است" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+
+    // Find who this was assigned to for the message
+    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(pack.assigned_to)
+    const assignedEmail = userData?.user?.email || "کاربر"
+
+    // Unassign the pack (set assigned_to = null)
+    await supabaseAdmin
+      .from("config_packs")
+      .update({ assigned_to: null, assigned_at: null })
+      .eq("id", pack_id)
+
+    // Unassign all configs in the pack
+    await supabaseAdmin
+      .from("vless_configs")
+      .update({ assigned_to: null, assigned_at: null })
+      .eq("pack_id", pack_id)
+
+    return new Response(JSON.stringify({
+      message: `✅ بسته "${pack.pack_name}" از کاربر ${assignedEmail} جدا شد و به انبار بازگشت`,
+      pack_name: pack.pack_name,
+    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "خطای داخلی سرور" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+  }
+})

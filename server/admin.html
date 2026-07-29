@@ -1109,6 +1109,13 @@
               <button class="btn btn-sm btn-secondary" onclick="showEditPackModal('${pack.id}')" title="ویرایش کانفیگ‌های بسته">
                 ✏️ ویرایش
               </button>
+              ${pack.assigned_to ? `
+              <button class="btn btn-sm btn-secondary" onclick="handleUnassignPack('${pack.id}')" title="بازگرداندن به انبار">
+                ↩️ لغو تخصیص
+              </button>` : ''}
+              <button class="btn btn-sm btn-danger" onclick="handleDeletePack('${pack.id}', '${escapeHtml(pack.pack_name)}')" title="حذف بسته">
+                🗑️ حذف
+              </button>
             </div>
           </div>
         `).join("");
@@ -1286,6 +1293,54 @@
         showError(err.message || "خطا در ذخیره تغییرات", alertContainer);
       } finally {
         hideLoading(btn);
+      }
+    };
+
+    // ============================================================
+    // Delete Pack
+    // ============================================================
+    window.handleDeletePack = async function(packId, packName) {
+      if (!confirm(`آیا از حذف کامل بسته "${packName}" اطمینان دارید؟\nتمام کانفیگ‌های داخل این بسته نیز حذف خواهند شد!\nاین عمل قابل بازگشت نیست!`)) return;
+      if (!confirm("⚠️ تأیید نهایی: این بسته برای همیشه حذف می‌شود")) return;
+
+      const alertContainer = document.getElementById("adminAlert");
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        const data = await adminApiCall(FUNCTION_URLS.adminDeletePack, {
+          method: "POST",
+          body: JSON.stringify({ pack_id: packId }),
+        });
+        showSuccess(data.message, alertContainer);
+        loadPacks();
+      } catch (err) {
+        showError(err.message || "خطا در حذف بسته", alertContainer);
+      }
+    };
+
+    // ============================================================
+    // Unassign Pack (return to pool)
+    // ============================================================
+    window.handleUnassignPack = async function(packId) {
+      if (!confirm("آیا از لغو تخصیص این بسته اطمینان دارید؟\nبسته به انبار بازگردانده می‌شود و کاربر آن را از دست می‌دهد.")) return;
+
+      const alertContainer = document.getElementById("adminAlert");
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+
+        const data = await adminApiCall(FUNCTION_URLS.adminUnassignPack, {
+          method: "POST",
+          body: JSON.stringify({ pack_id: packId }),
+        });
+
+        showSuccess(data.message, alertContainer);
+        loadPacks();
+        loadUsers(); // Refresh users table too since their config changed
+      } catch (err) {
+        showError(err.message || "خطا در لغو تخصیص", alertContainer);
       }
     };
 
