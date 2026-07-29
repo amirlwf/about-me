@@ -77,7 +77,7 @@ CREATE TABLE public.admin_users (
 -- SHA-256 hash of 'admin123_salt_vless_admin' = precomputed below
 -- Generate your own: echo -n 'yourpassword_salt_vless_admin' | sha256sum
 INSERT INTO public.admin_users (username, password_hash)
-VALUES ('admin', '2e7d34090342568880c4f40491c76020b743d4381416528c38681f619103e6c4');
+VALUES ('admin', '5c1ae31b16b2d99c33d999b0e7450704c6f98077d04503d737a4192d0e86dbdb');
 
 -- ============================================================
 -- 5. TUTORIAL VIDEOS
