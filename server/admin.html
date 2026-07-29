@@ -398,11 +398,19 @@
         setAdminToken(data.token, data.admin);
         showSuccess("ورود موفق!", alertContainer);
 
-        setTimeout(() => {
-          document.getElementById("adminLoginView").style.display = "none";
-          document.getElementById("adminDashboardView").style.display = "block";
-          document.getElementById("adminDisplay").textContent = data.admin.username;
-          loadDashboard();
+        setTimeout(async () => {
+          try {
+            document.getElementById("adminLoginView").style.display = "none";
+            document.getElementById("adminDashboardView").style.display = "block";
+            document.getElementById("adminDisplay").textContent = data.admin.username;
+            await loadDashboard();
+          } catch (err) {
+            // loadDashboard failed — switch back to login view
+            clearAdminToken();
+            document.getElementById("adminLoginView").style.display = "flex";
+            document.getElementById("adminDashboardView").style.display = "none";
+            showError("خطا در بارگذاری داشبورد: " + (err.message || "خطای ناشناخته"), document.getElementById("loginAlert"));
+          }
         }, 500);
       } catch (err) {
         showError(err.message || "خطا در ورود", alertContainer);
@@ -462,13 +470,16 @@
           },
         });
       } catch (err) {
-        // If session expired or auth failed, redirect to login gracefully
-        if (err.message.includes("جلسه مدیر") || err.message.includes("احراز هویت")) {
+        // If session expired, auth failed, or server returned 401 (even non-JSON), redirect to login gracefully
+        const isAuthError = err.message.includes("جلسه مدیر") ||
+                            err.message.includes("احراز هویت") ||
+                            err.message.includes("کد 401");
+        if (isAuthError) {
           clearAdminToken();
           document.getElementById("adminLoginView").style.display = "flex";
           document.getElementById("adminDashboardView").style.display = "none";
-          showError("خطای ناشناخته", document.getElementById("loginAlert"));
-          throw new Error("خطای ناشناخته");
+          showError("جلسه مدیر منقضی شده. لطفاً دوباره وارد شوید.", document.getElementById("loginAlert"));
+          throw new Error("جلسه مدیر منقضی شده");
         }
         throw err;
       }
@@ -518,7 +529,7 @@
         `).join("");
       } catch (err) {
         // If it's an auth error, re-throw so checkAdminSession knows to keep dashboard hidden
-        if (err.message === "خطای ناشناخته") {
+        if (err.message === "جلسه مدیر منقضی شده") {
           throw err;
         }
         showError("خطا در بارگذاری کاربران: " + err.message, document.getElementById("adminAlert"));

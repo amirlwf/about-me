@@ -15,7 +15,14 @@ export function getSupabase() {
     throw new Error("Supabase client not loaded. Make sure the CDN script is included.");
   }
   
-  _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      storage: localStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  });
   return _supabase;
 }
 
@@ -43,11 +50,12 @@ export async function apiCall(url, options = {}) {
     data = await response.json();
   } catch {
     // Response was not valid JSON (e.g., HTML error page from Supabase)
-    throw new Error("خطای ناشناخته");
+    throw new Error("پاسخ سرور نامعتبر است (کد " + response.status + ")");
   }
 
   if (!response.ok) {
-    throw new Error(data.error || "خطای ناشناخته");
+    const errorMsg = data.error || data.message || `خطای سرور (کد ${response.status})`;
+    throw new Error(errorMsg);
   }
 
   return data;
