@@ -21,20 +21,16 @@ async function verifyAdminSession(supabaseAdmin: any, token: string): Promise<{ 
 
 function updateVlessRemarks(uri: string, newRemarks: string): string {
   try {
-    const questionIdx = uri.indexOf("?")
-    if (questionIdx === -1) return uri + "?remarks=" + encodeURIComponent(newRemarks)
-
-    const base = uri.substring(0, questionIdx)
-    let queryString = uri.substring(questionIdx + 1)
-    let fragment = ""
-    const hashIdx = queryString.indexOf("#")
-    if (hashIdx !== -1) { fragment = queryString.substring(hashIdx); queryString = queryString.substring(0, hashIdx) }
-
-    const params = new URLSearchParams(queryString)
-    const existingRemarks = params.get('remarks')
-    if (existingRemarks) { try { params.set('remarks', decodeURIComponent(existingRemarks)) } catch {} }
+    const qIdx = uri.indexOf("?")
+    if (qIdx === -1) return uri + "?remarks=" + encodeURIComponent(newRemarks)
+    const base = uri.substring(0, qIdx)
+    let qs = uri.substring(qIdx + 1)
+    let frag = ""
+    const hIdx = qs.indexOf("#")
+    if (hIdx !== -1) { frag = qs.substring(hIdx); qs = qs.substring(0, hIdx) }
+    const params = new URLSearchParams(qs)
     params.set("remarks", newRemarks)
-    return base + "?" + params.toString() + fragment
+    return base + "?" + params.toString() + frag
   } catch { return uri }
 }
 

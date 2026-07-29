@@ -8,25 +8,18 @@ const corsHeaders = {
 
 function updateVlessRemarks(uri: string, newRemarks: string): string {
   try {
-    const questionIdx = uri.indexOf("?")
-    if (questionIdx === -1) {
-      return uri + "?remarks=" + encodeURIComponent(newRemarks)
-    }
-    const base = uri.substring(0, questionIdx)
-    let queryString = uri.substring(questionIdx + 1)
-    let fragment = ""
-    const hashIdx = queryString.indexOf("#")
-    if (hashIdx !== -1) {
-      fragment = queryString.substring(hashIdx)
-      queryString = queryString.substring(0, hashIdx)
-    }
-    const params = new URLSearchParams(queryString)
-    const existingRemarks = params.get('remarks')
-    if (existingRemarks) {
-      try { params.set('remarks', decodeURIComponent(existingRemarks)) } catch { /* keep */ }
-    }
+    const qIdx = uri.indexOf("?")
+    if (qIdx === -1) return uri + "?remarks=" + encodeURIComponent(newRemarks)
+
+    const base = uri.substring(0, qIdx)
+    let qs = uri.substring(qIdx + 1)
+    let frag = ""
+    const hIdx = qs.indexOf("#")
+    if (hIdx !== -1) { frag = qs.substring(hIdx); qs = qs.substring(0, hIdx) }
+
+    const params = new URLSearchParams(qs)
     params.set("remarks", newRemarks)
-    return base + "?" + params.toString() + fragment
+    return base + "?" + params.toString() + frag
   } catch {
     return uri
   }
@@ -80,22 +73,26 @@ serve(async (req: Request) => {
 
     if (existingPack) {
       // User already has a pack — refresh remarks and return it
-      await supabaseAdmin
-        .from("vless_configs")
-        .update({ remark: personalizationTag })
-        .eq("pack_id", existingPack.id)
-
       const { data: packConfigs } = await supabaseAdmin
         .from("vless_configs")
         .select("id, vless_uri")
         .eq("pack_id", existingPack.id)
 
+      // Persist the personalized remark into each config's vless_uri in the database
       if (packConfigs && packConfigs.length > 0) {
-        const configs = packConfigs.map(c => ({
-          config_id: c.id,
-          vless_uri: updateVlessRemarks(c.vless_uri, personalizationTag),
-          remark: personalizationTag,
-        }))
+        const configs = []
+        for (const c of packConfigs) {
+          const personalizedUri = updateVlessRemarks(c.vless_uri, personalizationTag)
+          await supabaseAdmin
+            .from("vless_configs")
+            .update({ remark: personalizationTag, vless_uri: personalizedUri })
+            .eq("id", c.id)
+          configs.push({
+            config_id: c.id,
+            vless_uri: personalizedUri,
+            remark: personalizationTag,
+          })
+        }
 
         return new Response(JSON.stringify({
           pack: { id: existingPack.id, name: existingPack.pack_name, creator: existingPack.creator_name },
@@ -128,22 +125,27 @@ serve(async (req: Request) => {
 
       if (!assignPackErr && updatedPack) {
         // ★ Only proceed if the UPDATE actually affected a row (prevents race conditions)
-        await supabaseAdmin
-          .from("vless_configs")
-          .update({ assigned_to: user.id, assigned_at: now, remark: personalizationTag })
-          .eq("pack_id", unassignedPack.id)
-
+        // First, get all configs to personalize their URIs
         const { data: packConfigs } = await supabaseAdmin
           .from("vless_configs")
           .select("id, vless_uri")
           .eq("pack_id", unassignedPack.id)
 
         if (packConfigs && packConfigs.length > 0) {
-          const configs = packConfigs.map(c => ({
-            config_id: c.id,
-            vless_uri: updateVlessRemarks(c.vless_uri, personalizationTag),
-            remark: personalizationTag,
-          }))
+          // Persist the personalized vless_uri into the database for each config
+          const configs = []
+          for (const c of packConfigs) {
+            const personalizedUri = updateVlessRemarks(c.vless_uri, personalizationTag)
+            await supabaseAdmin
+              .from("vless_configs")
+              .update({ assigned_to: user.id, assigned_at: now, remark: personalizationTag, vless_uri: personalizedUri })
+              .eq("id", c.id)
+            configs.push({
+              config_id: c.id,
+              vless_uri: personalizedUri,
+              remark: personalizationTag,
+            })
+          }
 
           return new Response(JSON.stringify({
             pack: { id: unassignedPack.id, name: unassignedPack.pack_name, creator: unassignedPack.creator_name },
@@ -167,16 +169,18 @@ serve(async (req: Request) => {
 
     if (unassignedConfig) {
       const now = new Date().toISOString()
+      const personalizedUri = updateVlessRemarks(unassignedConfig.vless_uri, personalizationTag)
+
       await supabaseAdmin
         .from("vless_configs")
-        .update({ assigned_to: user.id, assigned_at: now, remark: personalizationTag })
+        .update({ assigned_to: user.id, assigned_at: now, remark: personalizationTag, vless_uri: personalizedUri })
         .eq("id", unassignedConfig.id)
 
       return new Response(JSON.stringify({
         pack: null,
         configs: [{
           config_id: unassignedConfig.id,
-          vless_uri: updateVlessRemarks(unassignedConfig.vless_uri, personalizationTag),
+          vless_uri: personalizedUri,
           remark: personalizationTag,
         }],
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } })

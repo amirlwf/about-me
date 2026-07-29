@@ -45,41 +45,50 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "خطا در دریافت بسته‌ها" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
 
-    // Get config counts per pack
+    // Get config counts per pack using a single efficient query
     const { data: configCounts } = await supabaseAdmin
       .from("vless_configs")
-      .select("pack_id, id")
+      .select("pack_id")
       .not("pack_id", "is", null)
 
-    // Get assigned user emails
+    const countMap: Record<string, number> = {}
+    for (const c of (configCounts || [])) {
+      countMap[c.pack_id] = (countMap[c.pack_id] || 0) + 1
+    }
+
+    // Get assigned user emails efficiently — use getUserById for each assigned user
     const assignedUserIds = packs
       ?.filter(p => p.assigned_to)
       .map(p => p.assigned_to) || []
 
-    let userMap: Record<string, string> = {}
-    if (assignedUserIds.length > 0) {
-      const { data: users } = await supabaseAdmin.auth.admin.listUsers()
-      if (users?.users) {
-        for (const u of users.users) {
-          userMap[u.id] = u.email || u.id
-        }
+    const userMap: Record<string, string> = {}
+    // Fetch only assigned users (batched, max 10 parallel requests)
+    const batchSize = 10
+    for (let i = 0; i < assignedUserIds.length; i += batchSize) {
+      const batch = assignedUserIds.slice(i, i + batchSize)
+      const results = await Promise.all(
+        batch.map(id =>
+          supabaseAdmin.auth.admin.getUserById(id)
+            .then(res => ({ id, email: res.data?.user?.email || id }))
+            .catch(() => ({ id, email: id }))
+        )
+      )
+      for (const r of results) {
+        userMap[r.id] = r.email
       }
     }
 
     // Build pack data
-    const packList = (packs || []).map(pack => {
-      const packConfigs = configCounts?.filter(c => c.pack_id === pack.id) || []
-      return {
-        id: pack.id,
-        pack_name: pack.pack_name,
-        creator_name: pack.creator_name,
-        config_count: packConfigs.length,
-        assigned_to: pack.assigned_to,
-        assigned_to_email: pack.assigned_to ? (userMap[pack.assigned_to] || "نامشخص") : null,
-        assigned_at: pack.assigned_at,
-        created_at: pack.created_at,
-      }
-    })
+    const packList = (packs || []).map(pack => ({
+      id: pack.id,
+      pack_name: pack.pack_name,
+      creator_name: pack.creator_name,
+      config_count: countMap[pack.id] || 0,
+      assigned_to: pack.assigned_to,
+      assigned_to_email: pack.assigned_to ? (userMap[pack.assigned_to] || "نامشخص") : null,
+      assigned_at: pack.assigned_at,
+      created_at: pack.created_at,
+    }))
 
     return new Response(JSON.stringify({ packs: packList }), {
       status: 200,

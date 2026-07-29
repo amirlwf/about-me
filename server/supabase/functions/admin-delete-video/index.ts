@@ -48,11 +48,10 @@ serve(async (req: Request) => {
     }
 
     // If video is stored in Supabase Storage, delete the file
-    if (video.video_url && video.video_url.includes(supabaseAdmin.storage.from("videos").getPublicUrl("").data?.publicUrl || "")) {
+    const storageUrlPrefix = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/videos/`
+    if (video.video_url && video.video_url.startsWith(storageUrlPrefix)) {
       try {
-        const urlObj = new URL(video.video_url)
-        const pathParts = urlObj.pathname.split("/")
-        const filePath = pathParts.slice(pathParts.indexOf("videos") + 1).join("/")
+        const filePath = video.video_url.replace(storageUrlPrefix, "")
         if (filePath) {
           await supabaseAdmin.storage.from("videos").remove([filePath])
         }
