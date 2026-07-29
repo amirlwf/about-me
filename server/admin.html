@@ -349,9 +349,18 @@
       if (isAdminLoggedIn()) {
         const admin = getAdminUser();
         document.getElementById("adminDisplay").textContent = admin?.username || "مدیر";
-        document.getElementById("adminLoginView").style.display = "none";
-        document.getElementById("adminDashboardView").style.display = "block";
-        await loadDashboard();
+        
+        // Don't show dashboard yet — verify token validity first
+        // If token is expired, adminApiCall will redirect to login
+        try {
+          await loadDashboard();
+          // Token is valid, now show the dashboard
+          document.getElementById("adminLoginView").style.display = "none";
+          document.getElementById("adminDashboardView").style.display = "block";
+        } catch {
+          // Auth error — adminApiCall already redirected to login
+          // No need to show dashboard
+        }
       }
     }
 
@@ -498,6 +507,10 @@
           </tr>
         `).join("");
       } catch (err) {
+        // If it's an auth error, re-throw so checkAdminSession knows to keep dashboard hidden
+        if (err.message === "خطای ناشناخته") {
+          throw err;
+        }
         showError("خطا در بارگذاری کاربران: " + err.message, document.getElementById("adminAlert"));
       }
     }
