@@ -31,13 +31,17 @@ async function verifyAdminSession(
 }
 
 function generateCode(): string {
-  // Generate a 6-digit numeric code
-  const bytes = new Uint8Array(3)
-  crypto.getRandomValues(bytes)
-  return Array.from(bytes)
-    .map((b) => (b % 10).toString())
-    .join("")
-    .substring(0, 6)
+  // Generate a 6-digit numeric code using cryptographic randomness
+  // Use rejection sampling to avoid bias (re-roll values >= 250)
+  const digits: number[] = []
+  const byte = new Uint8Array(1)
+  while (digits.length < 6) {
+    crypto.getRandomValues(byte)
+    if (byte[0] < 250) {
+      digits.push(byte[0] % 10)
+    }
+  }
+  return digits.join("")
 }
 
 serve(async (req: Request) => {
