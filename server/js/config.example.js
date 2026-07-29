@@ -24,4 +24,6 @@ export const FUNCTION_URLS = {
   adminReassignPack: `${SUPABASE_URL}/functions/v1/admin-reassign-pack`,
   adminUpdatePackConfigs: `${SUPABASE_URL}/functions/v1/admin-update-pack-configs`,
   adminGetPackConfigs: `${SUPABASE_URL}/functions/v1/admin-get-pack-configs`,
+  adminDeletePack: `${SUPABASE_URL}/functions/v1/admin-delete-pack`,
+  adminUnassignPack: `${SUPABASE_URL}/functions/v1/admin-unassign-pack`,
 };
