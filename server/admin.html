@@ -137,21 +137,42 @@
             <span>افزودن کانفیگ به انبار</span>
           </div>
           <p style="color: var(--gray-500); margin-bottom: 16px; font-size: 0.9rem;">
-            کانفیگ‌های VLESS را به صورت خط به خط (هر خط یک URI) وارد کنید:
+            کانفیگ‌ها را به صورت بسته (پک) وارد کنید. یک بسته شامل ۲۰-۳۰ کانفیگ است و به یک کاربر تخصیص می‌یابد.
           </p>
           <div id="configsAlert"></div>
           <div class="form-group">
-            <label class="form-label">پیشوند نام (اختیاری)</label>
-            <input type="text" class="form-input" id="configPrefix" placeholder="مثلاً: سرور آلمان" style="direction:rtl; text-align:right;">
+            <label class="form-label">نام بسته (پک)</label>
+            <input type="text" class="form-input" id="configPackName" placeholder="مثلاً: پک سرور ایران" style="direction:rtl; text-align:right;" value="پک سرور ایران">
+          </div>
+          <div class="form-group">
+            <label class="form-label">نام سازنده</label>
+            <input type="text" class="form-input" id="configCreatorName" placeholder="مثلاً: مدیر سیستم" style="direction:rtl; text-align:right;" value="مدیر">
           </div>
           <div class="form-group">
             <label class="form-label">لیست کانفیگ‌ها (هر خط یک URI)</label>
             <textarea class="form-textarea" id="configsTextarea" placeholder="vless://uuid@host:port?..." rows="8"></textarea>
-            <p class="form-hint">فقط خطوطی که با vless:// شروع شوند اضافه خواهند شد</p>
+            <p class="form-hint">فقط خطوطی که با vless:// شروع شوند اضافه خواهند شد — یک بسته معمولاً ۲۰-۳۰ کانفیگ دارد</p>
           </div>
           <button class="btn btn-primary" id="addConfigsBtn" onclick="handleAddConfigs()">
-            اضافه کردن کانفیگ‌ها →
+            اضافه کردن بسته کانفیگ →
           </button>
+
+          <div class="divider"></div>
+
+          <!-- Pack Management -->
+          <div class="section-title">
+            <span class="icon">📦</span>
+            <span>مدیریت بسته‌ها</span>
+          </div>
+          <p style="color: var(--gray-500); margin-bottom: 16px; font-size: 0.9rem;">
+            لیست تمام بسته‌های کانفیگ — می‌توانید کانفیگ‌های داخل هر بسته را ویرایش کنید.
+          </p>
+          <div id="packsContainer">
+            <div class="empty-state">
+              <div class="icon">◇</div>
+              <p>هیچ بسته‌ای ایجاد نشده</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -315,6 +336,57 @@
     </div>
   </div>
 
+  <!-- ============ REASSIGN PACK MODAL ============ -->
+  <div id="reassignModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-title">📦 تغییر کانفیگ کاربر</span>
+        <button class="modal-close" onclick="closeReassignModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); margin-bottom: 16px;">
+          کاربر: <strong id="reassignUserName"></strong>
+        </p>
+        <div id="reassignAlert"></div>
+        <div id="reassignPacksList">
+          <p style="color: var(--text-muted);">در حال بارگذاری بسته‌های موجود...</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeReassignModal()">انصراف</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ EDIT PACK CONFIGS MODAL ============ -->
+  <div id="editPackModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <span class="modal-title" id="editPackTitle">✏️ ویرایش کانفیگ‌های بسته</span>
+        <button class="modal-close" onclick="closeEditPackModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="editPackAlert"></div>
+        <div class="form-group">
+          <label class="form-label">نام بسته</label>
+          <input type="text" class="form-input" id="editPackName" style="direction:rtl; text-align:right;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">نام سازنده</label>
+          <input type="text" class="form-input" id="editPackCreator" style="direction:rtl; text-align:right;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">لیست کانفیگ‌ها (هر خط یک URI)</label>
+          <textarea class="form-textarea" id="editPackConfigs" rows="10"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeEditPackModal()">انصراف</button>
+        <button class="btn btn-primary" id="saveEditPackBtn" onclick="handleSaveEditPack()">ذخیره تغییرات</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Noise Overlay -->
   <div class="noise-overlay"></div>
 
@@ -445,6 +517,7 @@
 
       // Load data for specific tabs
       if (tab === "users") loadUsers();
+      if (tab === "configs") loadPacks();
       if (tab === "videos") loadExistingVideos();
     };
 
@@ -510,7 +583,7 @@
         // Populate table
         const tbody = document.getElementById("usersTableBody");
         if (!data.users || data.users.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">هنوز کاربری ثبت‌نام نکرده</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">هنوز کاربری ثبت‌نام نکرده</td></tr>';
           return;
         }
 
@@ -527,13 +600,19 @@
             </td>
             <td>
               ${user.config
-                ? `<span class="badge badge-info">${escapeHtml(user.config.remark || 'تخصیص یافته')}</span>`
+                ? (user.config.type === 'pack'
+                    ? `<span class="badge badge-info" title="سازنده: ${escapeHtml(user.config.creator_name)}">📦 ${escapeHtml(user.config.pack_name)}</span>`
+                    : `<span class="badge badge-info">${escapeHtml(user.config.remark || 'تخصیص یافته')}</span>`
+                  )
                 : `<span class="badge badge-warning">بدون کانفیگ</span>`
               }
             </td>
             <td class="actions-cell">
               <button class="btn btn-sm ${user.is_banned ? 'btn-warning' : 'btn-secondary'}" onclick="${user.is_banned ? `handleUnbanUser('${user.id}')` : `handleBanUser('${user.id}')`}" title="${user.is_banned ? 'لغو مسدودیت' : 'مسدود کردن'}">
                 ${user.is_banned ? '✓' : '🚫'}
+              </button>
+              <button class="btn btn-sm btn-secondary" onclick="showReassignModal('${user.id}', '${escapeHtml(user.display_name || user.email)}')" title="تغییر کانفیگ">
+                📦
               </button>
               <button class="btn btn-sm btn-danger" onclick="handleDeleteUser('${user.id}', '${escapeHtml(user.email)}')" title="حذف کاربر">
                 🗑️
@@ -557,7 +636,6 @@
       const btn = document.getElementById("addConfigsBtn");
       const alertContainer = document.getElementById("configsAlert");
       const textarea = document.getElementById("configsTextarea");
-      const prefix = document.getElementById("configPrefix").value.trim();
 
       const lines = textarea.value.split("\n").filter(l => l.trim().startsWith("vless://"));
       if (lines.length === 0) {
@@ -575,13 +653,15 @@
           method: "POST",
           body: JSON.stringify({
             configs: lines,
-            remark_prefix: prefix,
+            pack_name: document.getElementById("configPackName").value.trim(),
+            creator_name: document.getElementById("configCreatorName").value.trim(),
           }),
         });
 
         showSuccess(data.message, alertContainer);
         textarea.value = "";
-        document.getElementById("configPrefix").value = "";
+        document.getElementById("configPackName").value = "پک سرور ایران";
+        document.getElementById("configCreatorName").value = "مدیر";
       } catch (err) {
         showError(err.message || "خطا در اضافه کردن کانفیگ‌ها", alertContainer);
       } finally {
@@ -990,6 +1070,222 @@
         loadExistingVideos();
       } catch (err) {
         showError(err.message || "خطا در حذف ویدیو", alertContainer);
+      }
+    };
+
+    // ============================================================
+    // Pack Management
+    // ============================================================
+    async function loadPacks() {
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        const data = await adminApiCall(FUNCTION_URLS.adminGetPacks);
+
+        const container = document.getElementById("packsContainer");
+
+        if (!data.packs || data.packs.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">◇</div>
+              <p>هیچ بسته‌ای ایجاد نشده</p>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = data.packs.map(pack => `
+          <div class="pack-card ${pack.assigned_to ? 'pack-assigned' : 'pack-available'}">
+            <div class="pack-card-header">
+              <strong class="pack-card-name">📦 ${escapeHtml(pack.pack_name)}</strong>
+              <span class="badge ${pack.assigned_to ? 'badge-warning' : 'badge-success'}">
+                ${pack.assigned_to ? `تخصیص به ${escapeHtml(pack.assigned_to_email)}` : 'موجود در انبار'}
+              </span>
+            </div>
+            <div class="pack-card-meta">
+              <span>🛠️ ${escapeHtml(pack.creator_name)}</span>
+              <span>🔢 ${pack.config_count} کانفیگ</span>
+              ${pack.assigned_at ? `<span>📅 ${formatDate(pack.assigned_at)}</span>` : ''}
+            </div>
+            <div class="pack-card-actions">
+              <button class="btn btn-sm btn-secondary" onclick="showEditPackModal('${pack.id}')" title="ویرایش کانفیگ‌های بسته">
+                ✏️ ویرایش
+              </button>
+            </div>
+          </div>
+        `).join("");
+      } catch (err) {
+        console.error("Error loading packs:", err);
+      }
+    }
+
+    // ============================================================
+    // Reassign Pack Modal
+    // ============================================================
+    let _reassignUserId = null;
+
+    window.showReassignModal = async function(userId, userName) {
+      _reassignUserId = userId;
+      document.getElementById("reassignUserName").textContent = userName;
+      document.getElementById("reassignPacksList").innerHTML = '<p style="color: var(--text-muted);">در حال بارگذاری...</p>';
+      document.getElementById("reassignAlert").innerHTML = '';
+      document.getElementById("reassignModal").style.display = "flex";
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        const data = await adminApiCall(FUNCTION_URLS.adminGetPacks);
+
+        const availablePacks = (data.packs || []).filter(p => !p.assigned_to);
+
+        if (availablePacks.length === 0) {
+          document.getElementById("reassignPacksList").innerHTML = `
+            <div class="empty-state" style="padding: 20px;">
+              <p>هیچ بسته‌ای در انبار موجود نیست</p>
+              <p style="font-size: 0.8rem; color: var(--text-muted);">ابتدا یک بسته جدید ایجاد کنید</p>
+            </div>`;
+          return;
+        }
+
+        document.getElementById("reassignPacksList").innerHTML = `
+          <div class="pack-select-list">
+            ${availablePacks.map(pack => `
+              <div class="pack-select-item" onclick="handleReassignPack('${pack.id}')">
+                <div class="pack-select-info">
+                  <strong>📦 ${escapeHtml(pack.pack_name)}</strong>
+                  <span class="pack-select-meta">🛠️ ${escapeHtml(pack.creator_name)} • 🔢 ${pack.config_count} کانفیگ</span>
+                </div>
+                <button class="btn btn-sm btn-primary">انتخاب</button>
+              </div>
+            `).join("")
+          }</div>`;
+      } catch (err) {
+        document.getElementById("reassignPacksList").innerHTML = `<p style="color: var(--text-secondary);">خطا در بارگذاری: ${escapeHtml(err.message)}</p>`;
+      }
+    };
+
+    window.closeReassignModal = function() {
+      _reassignUserId = null;
+      document.getElementById("reassignModal").style.display = "none";
+    };
+
+    window.handleReassignPack = async function(packId) {
+      if (!_reassignUserId) return;
+      if (!confirm("آیا از تخصیص این بسته به کاربر اطمینان دارید؟\nبسته فعلی کاربر به انبار بازگردانده می‌شود.")) return;
+
+      const alertContainer = document.getElementById("reassignAlert");
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+
+        const data = await adminApiCall(FUNCTION_URLS.adminReassignPack, {
+          method: "POST",
+          body: JSON.stringify({ user_id: _reassignUserId, new_pack_id: packId }),
+        });
+
+        showSuccess(data.message, alertContainer);
+        setTimeout(() => {
+          closeReassignModal();
+          loadUsers();
+          loadPacks();
+        }, 1200);
+      } catch (err) {
+        showError(err.message || "خطا در تغییر کانفیگ", alertContainer);
+      }
+    };
+
+    // ============================================================
+    // Edit Pack Configs Modal
+    // ============================================================
+    let _editPackId = null;
+
+    window.showEditPackModal = async function(packId) {
+      _editPackId = packId;
+      document.getElementById("editPackAlert").innerHTML = '';
+      document.getElementById("editPackTitle").textContent = "✏️ ویرایش کانفیگ‌های بسته";
+      document.getElementById("saveEditPackBtn").disabled = false;
+      document.getElementById("editPackModal").style.display = "flex";
+
+      document.getElementById("editPackName").value = "در حال بارگذاری...";
+      document.getElementById("editPackCreator").value = "در حال بارگذاری...";
+      document.getElementById("editPackConfigs").value = "در حال بارگذاری...";
+
+      // Fetch pack details and configs via admin API (bypasses RLS)
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        const data = await adminApiCall(FUNCTION_URLS.adminGetPackConfigs, {
+          method: "POST",
+          body: JSON.stringify({ pack_id: packId }),
+        });
+
+        const pack = data.pack;
+        const configs = data.configs || [];
+
+        document.getElementById("editPackName").value = pack.pack_name || "";
+        document.getElementById("editPackCreator").value = pack.creator_name || "";
+
+        if (configs.length > 0) {
+          document.getElementById("editPackConfigs").value = configs.map(c => c.vless_uri).join("\n");
+        } else {
+          document.getElementById("editPackConfigs").value = "";
+        }
+      } catch (err) {
+        console.error("Error loading pack configs:", err);
+        document.getElementById("editPackConfigs").value = "";
+        showError("خطا در بارگذاری: " + (err.message || "خطای ناشناخته"), document.getElementById("editPackAlert"));
+      }
+    };
+
+    window.closeEditPackModal = function() {
+      _editPackId = null;
+      document.getElementById("editPackModal").style.display = "none";
+    };
+
+    window.handleSaveEditPack = async function() {
+      if (!_editPackId) return;
+
+      const btn = document.getElementById("saveEditPackBtn");
+      const alertContainer = document.getElementById("editPackAlert");
+
+      const packName = document.getElementById("editPackName").value.trim();
+      const creatorName = document.getElementById("editPackCreator").value.trim();
+      const configsText = document.getElementById("editPackConfigs").value;
+
+      if (!packName) {
+        showError("نام بسته الزامی است", alertContainer);
+        return;
+      }
+
+      const lines = configsText.split("\n").filter(l => l.trim().startsWith("vless://"));
+      if (lines.length === 0) {
+        showError("حداقل یک کانفیگ vless معتبر وارد کنید", alertContainer);
+        return;
+      }
+
+      showLoading(btn);
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+
+        // Update pack metadata + configs via admin edge function (bypasses RLS)
+        const data = await adminApiCall(FUNCTION_URLS.adminUpdatePackConfigs, {
+          method: "POST",
+          body: JSON.stringify({
+            pack_id: _editPackId,
+            pack_name: packName,
+            creator_name: creatorName,
+            configs: lines,
+          }),
+        });
+
+        showSuccess(data.message, alertContainer);
+        setTimeout(() => {
+          closeEditPackModal();
+          loadPacks();
+        }, 1200);
+      } catch (err) {
+        showError(err.message || "خطا در ذخیره تغییرات", alertContainer);
+      } finally {
+        hideLoading(btn);
       }
     };
 

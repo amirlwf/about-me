@@ -1391,3 +1391,322 @@ hr { border: none; height: 1px; background: var(--border); margin: 20px 0; }
   .card-title { font-size: 1.05rem; }
   .splash-title { font-size: 1.5rem; letter-spacing: 4px; }
 }
+
+/* ============================================================
+   CONFIG PACK DISPLAY
+   ============================================================ */
+.pack-header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pack-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pack-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 2px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--text-primary);
+  color: var(--bg);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.pack-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pack-info {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.pack-info span {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.pack-configs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.pack-config-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.pack-config-item:hover {
+  border-color: var(--gray-500);
+}
+
+.config-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  color: var(--bg);
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.config-uri {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  direction: ltr;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copy-btn-small {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-vazir);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.copy-btn-small:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.config-text-single {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  direction: ltr;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ============================================================
+   ADMIN ACTIONS CELL
+   ============================================================ */
+.actions-cell {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.actions-cell .btn {
+  min-width: 32px;
+  padding: 6px 8px;
+}
+
+.row-banned {
+  opacity: 0.5;
+}
+
+.row-banned td:last-child {
+  opacity: 1;
+}
+
+/* ============================================================
+   MODAL OVERLAY
+   ============================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease;
+}
+
+.modal-lg {
+  max-width: 700px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 0;
+}
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: var(--transition);
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 20px 24px;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 0 24px 20px;
+}
+
+/* ============================================================
+   PACK SELECT LIST (for reassign modal)
+   ============================================================ */
+.pack-select-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pack-select-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.pack-select-item:hover {
+  border-color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.pack-select-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pack-select-info strong {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.pack-select-meta {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   PACK CARDS (in configs tab)
+   ============================================================ */
+.pack-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  margin-bottom: 8px;
+  transition: var(--transition);
+}
+
+.pack-card:hover {
+  border-color: var(--gray-500);
+}
+
+.pack-card.pack-assigned {
+  border-left: 3px solid var(--text-muted);
+}
+
+.pack-card.pack-available {
+  border-left: 3px solid var(--text-primary);
+}
+
+.pack-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.pack-card-name {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.pack-card-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.pack-card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+[data-theme="light"] .pack-card.pack-assigned {
+  border-left-color: var(--gray-400);
+}
+
+[data-theme="light"] .pack-card.pack-available {
+  border-left-color: var(--black);
+}

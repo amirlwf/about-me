@@ -67,11 +67,11 @@
         <!-- Config Display State -->
         <div id="configDisplayState" style="display:none;">
           <div class="config-box">
-            <button class="copy-btn" id="copyBtn" onclick="handleCopy()">کپی</button>
-            <pre class="config-text" id="configText"></pre>
+            <button class="copy-btn" id="copyBtn" onclick="handleCopy()">کپی همه</button>
+            <div class="config-text" id="configText"></div>
           </div>
           <p style="margin-top: 12px; font-size: 0.78rem; color: var(--gray-600);">
-            این کانفیگ منحصر به فرد شماست و قابل انتقال به دیگران نیست
+            این بسته کانفیگ منحصر به فرد شماست و قابل انتقال به دیگران نیست
           </p>
         </div>
       </div>
@@ -141,6 +141,8 @@
     async function init() {
       currentUser = await getCurrentUser();
       if (!currentUser) {
+        // User deleted or session expired — clear stale session first to prevent infinite redirect loop
+        await supabase.auth.signOut();
         window.location.href = "index.html";
         return;
       }
@@ -157,10 +159,32 @@
     }
 
     // ============================================================
-    // Load existing config
+    // Load existing config (supports packs + individual configs)
     // ============================================================
     async function loadExistingConfig() {
       try {
+        // First try to find a pack assigned to user
+        const { data: pack, error: packError } = await supabase
+          .from("config_packs")
+          .select("id, pack_name, creator_name, assigned_to")
+          .eq("assigned_to", currentUser.id)
+          .maybeSingle();
+
+        if (!packError && pack) {
+          // User has a pack — load all configs in it
+          const { data: configs, error: configsError } = await supabase
+            .from("vless_configs")
+            .select("id, vless_uri, remark")
+            .eq("pack_id", pack.id);
+
+          if (!configsError && configs && configs.length > 0) {
+            userConfig = { pack, configs };
+            displayConfig(userConfig);
+            return;
+          }
+        }
+
+        // Fallback: individual config (old system)
         const { data: configs, error } = await supabase
           .from("vless_configs")
           .select("id, vless_uri, remark")
@@ -170,7 +194,7 @@
         if (error) throw error;
 
         if (configs && configs.length > 0) {
-          userConfig = configs[0];
+          userConfig = { configs: [configs[0]] };
           displayConfig(userConfig);
         }
       } catch (err) {
@@ -179,12 +203,64 @@
     }
 
     // ============================================================
-    // Display config
+    // Display config (pack or individual)
     // ============================================================
-    function displayConfig(config) {
+    function displayConfig(data) {
       document.getElementById("noConfigState").style.display = "none";
       document.getElementById("configDisplayState").style.display = "block";
-      document.getElementById("configText").textContent = config.vless_uri;
+
+      const container = document.getElementById("configText");
+
+      if (data.pack) {
+        // Pack display
+        const displayName = currentUser.user_metadata?.display_name || currentUser.email.split("@")[0];
+        container.innerHTML = `
+          <div class="pack-header">
+            <div class="pack-meta">
+              <span class="pack-badge">📦 بسته کانفیگ</span>
+              <strong class="pack-name">${escapeHtml(data.pack.pack_name)}</strong>
+            </div>
+            <div class="pack-info">
+              <span>👤 کاربر: ${escapeHtml(displayName)}</span>
+              <span>🛠️ سازنده: ${escapeHtml(data.pack.creator_name)}</span>
+            </div>
+          </div>
+          <div class="pack-configs-list">
+            ${data.configs.map((cfg, idx) => `
+              <div class="pack-config-item">
+                <span class="config-index">${idx + 1}</span>
+                <code class="config-uri">${escapeHtml(cfg.vless_uri)}</code>
+                <button class="copy-btn-small" onclick="copyConfigText('${idx}')">کپی</button>
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        // Store configs for copy function
+        window._packConfigs = data.configs;
+      } else if (data.configs && data.configs.length > 0) {
+        // Single config (backward compat)
+        container.innerHTML = `<pre class="config-text-single">${escapeHtml(data.configs[0].vless_uri)}</pre>`;
+        window._packConfigs = data.configs;
+      }
+    }
+
+    // Copy a specific config from pack by index
+    function copyConfigText(index) {
+      if (window._packConfigs && window._packConfigs[index]) {
+        copyToClipboard(window._packConfigs[index].vless_uri);
+        // Show visual feedback
+        const btns = document.querySelectorAll('.copy-btn-small');
+        if (btns[index]) {
+          const original = btns[index].textContent;
+          btns[index].textContent = '✅';
+          btns[index].style.borderColor = 'var(--text-primary)';
+          setTimeout(() => {
+            btns[index].textContent = original;
+            btns[index].style.borderColor = '';
+          }, 1500);
+        }
+      }
     }
 
     // ============================================================
@@ -204,8 +280,19 @@
           method: "POST",
         });
 
-        userConfig = data;
-        displayConfig(data);
+        // Normalize response to match displayConfig format
+        const normalized = {
+          pack: data.pack ? {
+            pack_name: data.pack.name || data.pack.pack_name || '',
+            creator_name: data.pack.creator || data.pack.creator_name || '',
+          } : null,
+          configs: (data.configs || []).map(c => ({
+            vless_uri: c.vless_uri || '',
+            remark: c.remark || '',
+          })),
+        };
+        userConfig = normalized;
+        displayConfig(normalized);
         showSuccess("کانفیگ شما با موفقیت تخصیص یافت!", alertContainer);
       } catch (err) {
         showError(err.message || "خطا در دریافت کانفیگ", alertContainer);
@@ -219,8 +306,25 @@
     // ============================================================
     window.handleCopy = async function() {
       const btn = document.getElementById("copyBtn");
-      const text = document.getElementById("configText").textContent;
+      const container = document.getElementById("configText");
 
+      // If pack mode, copy all configs
+      if (window._packConfigs && window._packConfigs.length > 1) {
+        const allText = window._packConfigs.map(c => c.vless_uri).join('\n');
+        const success = await copyToClipboard(allText);
+        if (success) {
+          btn.textContent = "✅ همه کپی شد!";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "کپی همه";
+            btn.classList.remove("copied");
+          }, 2000);
+        }
+        return;
+      }
+
+      // Single config
+      const text = container.textContent;
       const success = await copyToClipboard(text);
       if (success) {
         btn.textContent = "✅ کپی شد!";
@@ -262,10 +366,8 @@
           const card = document.createElement("div");
           card.className = "video-card";
 
-          // Determine if it's an embed URL or direct video
           let embedHtml = "";
           if (video.video_url.includes("youtube.com") || video.video_url.includes("youtu.be")) {
-            // YouTube embed
             let videoId = "";
             if (video.video_url.includes("youtu.be")) {
               videoId = video.video_url.split("youtu.be/")[1]?.split("?")[0];
@@ -280,7 +382,6 @@
           } else if (video.video_url.match(/\.(mp4|webm|ogg)$/i)) {
             embedHtml = `<video class="video-embed" controls preload="metadata"><source src="${escapeHtml(video.video_url)}" type="video/mp4">مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند</video>`;
           } else {
-            // Generic embed
             embedHtml = `<iframe class="video-embed" src="${video.video_url}" allowfullscreen></iframe>`;
           }
 

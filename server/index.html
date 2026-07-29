@@ -173,13 +173,20 @@
     }, 4000);
 
     // ============================================================
-    // Auth Check
+    // Auth Check — verify session is actually valid (not just stored)
     // ============================================================
     const supabase = getSupabase();
     (async function checkExistingSession() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        window.location.href = "dashboard.html";
+        // Verify the session is still valid (user wasn't deleted)
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          window.location.href = "dashboard.html";
+        } else {
+          // Stale session from deleted user — clear it
+          await supabase.auth.signOut();
+        }
       }
     })();
 

@@ -9,21 +9,17 @@ const corsHeaders = {
 /**
  * Parse a vless:// URI and update the remarks parameter.
  * vless:// format: vless://uuid@host:port?params#fragment
- * Since vless:// is not a standard URL protocol, we parse it manually.
  */
 function updateVlessRemarks(uri: string, newRemarks: string): string {
   try {
-    // Split at the first ? to separate base from query
     const questionIdx = uri.indexOf("?")
     if (questionIdx === -1) {
-      // No query params, add remarks as the first param
       return uri + "?remarks=" + encodeURIComponent(newRemarks)
     }
 
     const base = uri.substring(0, questionIdx)
     let queryString = uri.substring(questionIdx + 1)
 
-    // Remove fragment if present
     let fragment = ""
     const hashIdx = queryString.indexOf("#")
     if (hashIdx !== -1) {
@@ -31,22 +27,17 @@ function updateVlessRemarks(uri: string, newRemarks: string): string {
       queryString = queryString.substring(0, hashIdx)
     }
 
-    // Parse existing params
     const params = new URLSearchParams(queryString)
-    // Decode existing remarks to avoid double-encoding
     const existingRemarks = params.get('remarks')
     if (existingRemarks) {
       try {
         params.set('remarks', decodeURIComponent(existingRemarks))
       } catch {
-        // keep as-is if decode fails
+        // keep as-is
       }
     }
 
-    // Set or replace remarks
     params.set("remarks", newRemarks)
-
-    // Reconstruct
     return base + "?" + params.toString() + fragment
   } catch {
     return uri
@@ -68,7 +59,6 @@ serve(async (req: Request) => {
       )
     }
 
-    // Create client with user's JWT
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -87,7 +77,6 @@ serve(async (req: Request) => {
       )
     }
 
-    // Use admin client for the atomic assignment
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -102,52 +91,116 @@ serve(async (req: Request) => {
 
     const displayName = profile?.display_name || user.email?.split("@")[0] || "User"
 
-    // Call the atomic PostgreSQL function
-    const { data: assignResult, error: assignError } = await supabaseAdmin.rpc(
-      "assign_config_to_user",
+    // ----- TRY PACK ASSIGNMENT FIRST (new system) -----
+    const { data: packAssignResult, error: packAssignError } = await supabaseAdmin.rpc(
+      "assign_pack_to_user",
       { p_user_id: user.id }
     )
 
-    if (assignError) {
-      if (assignError.message?.includes("NO_CONFIGS_AVAILABLE")) {
+    if (packAssignError) {
+      // If no packs available OR the RPC doesn't exist yet (migration not applied),
+      // fall back to individual config assignment for backward compatibility
+      const isFallbackCase = packAssignError.message?.includes("NO_PACKS_AVAILABLE") ||
+                             packAssignError.message?.includes("does not exist") ||
+                             packAssignError.message?.includes("relation") ||
+                             packAssignError.message?.includes("not found");
+      if (!isFallbackCase) {
         return new Response(
-          JSON.stringify({ error: "هیچ کانفیگی در دسترس نیست. لطفاً بعداً تلاش کنید" }),
-          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "خطا در تخصیص بسته کانفیگ" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         )
       }
+
+      // ----- FALLBACK: Individual config assignment (old system) -----
+      const { data: assignResult, error: assignError } = await supabaseAdmin.rpc(
+        "assign_config_to_user",
+        { p_user_id: user.id }
+      )
+
+      if (assignError) {
+        if (assignError.message?.includes("NO_CONFIGS_AVAILABLE")) {
+          return new Response(
+            JSON.stringify({ error: "هیچ کانفیگی در دسترس نیست. لطفاً بعداً تلاش کنید" }),
+            { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          )
+        }
+        return new Response(
+          JSON.stringify({ error: "خطا در تخصیص کانفیگ" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        )
+      }
+
+      if (!assignResult || assignResult.length === 0) {
+        return new Response(
+          JSON.stringify({ error: "خطا در تخصیص کانفیگ" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        )
+      }
+
+      const config = assignResult[0]
+      const personalizedRemark = `${config.remark} | ${displayName} | Made by amirlwf.ir`
+      await supabaseAdmin
+        .from("vless_configs")
+        .update({ remark: personalizedRemark })
+        .eq("id", config.config_id)
+
+      const personalizedUri = updateVlessRemarks(config.vless_uri, personalizedRemark)
+
       return new Response(
-        JSON.stringify({ error: "خطا در تخصیص کانفیگ" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          pack: null, // No pack — single config fallback
+          configs: [{
+            config_id: config.config_id,
+            vless_uri: personalizedUri,
+            remark: personalizedRemark,
+          }],
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
 
-    if (!assignResult || assignResult.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "خطا در تخصیص کانفیگ" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
-    }
+    // ----- PACK ASSIGNED SUCCESSFULLY -----
+    const packInfo = packAssignResult[0]
 
-    const config = assignResult[0]
-
-    // Personalize the config: append user name and brand tag to remark
-    const personalizedRemark = `${config.remark} | ${displayName} | Made by amirlwf.ir`
-
-    // Update the remark in the database
-    await supabaseAdmin
+    // Fetch all configs in this pack
+    const { data: packConfigs, error: configsError } = await supabaseAdmin
       .from("vless_configs")
-      .update({ remark: personalizedRemark })
-      .eq("id", config.config_id)
+      .select("id, vless_uri, remark")
+      .eq("pack_id", packInfo.pack_id)
 
-    // Build the personalized vless URI using manual string parsing
-    // (vless:// is not a standard URL protocol, so new URL() won't work)
-    const personalizedUri = updateVlessRemarks(config.vless_uri, personalizedRemark)
+    if (configsError || !packConfigs || packConfigs.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "خطا در دریافت کانفیگ‌های بسته" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    // Personalize each config's remark: "پک نام | سازنده: نام | کاربر: نام | Made by amirlwf.ir"
+    const personalizationTag = `${packInfo.pack_name} | سازنده: ${packInfo.creator_name} | کاربر: ${displayName} | Made by amirlwf.ir`
+
+    const personalizedConfigs = await Promise.all(
+      packConfigs.map(async (config: any) => {
+        await supabaseAdmin
+          .from("vless_configs")
+          .update({ remark: personalizationTag })
+          .eq("id", config.id)
+
+        return {
+          config_id: config.id,
+          vless_uri: updateVlessRemarks(config.vless_uri, personalizationTag),
+          remark: personalizationTag,
+        }
+      })
+    )
 
     return new Response(
       JSON.stringify({
-        config_id: config.config_id,
-        vless_uri: personalizedUri,
-        remark: personalizedRemark,
+        pack: {
+          id: packInfo.pack_id,
+          name: packInfo.pack_name,
+          creator: packInfo.creator_name,
+        },
+        configs: personalizedConfigs,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     )

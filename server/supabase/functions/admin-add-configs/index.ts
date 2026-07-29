@@ -10,7 +10,6 @@ async function verifyAdminSession(
   supabaseAdmin: any,
   token: string
 ): Promise<{ valid: boolean; admin_id?: string }> {
-  // Hash the token
   const encoder = new TextEncoder()
   const tokenHashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(token))
   const tokenHash = Array.from(new Uint8Array(tokenHashBuffer))
@@ -60,7 +59,7 @@ serve(async (req: Request) => {
       )
     }
 
-    const { configs, remark_prefix } = await req.json()
+    const { configs, pack_name, creator_name } = await req.json()
 
     if (!configs || !Array.isArray(configs) || configs.length === 0) {
       return new Response(
@@ -69,28 +68,10 @@ serve(async (req: Request) => {
       )
     }
 
-    // Parse configs - each line is a vless:// URI
+    // Filter valid VLESS URIs
     const entries = configs
       .map((line: string) => line.trim())
       .filter((line: string) => line.startsWith("vless://"))
-      .map((uri: string) => {
-        // Extract remark from URL params if present
-        let remark = remark_prefix || ""
-        try {
-          const url = new URL(uri)
-          const remarksParam = url.searchParams.get("remarks")
-          if (remarksParam) {
-            remark = remark ? `${remark} - ${remarksParam}` : remarksParam
-          }
-        } catch {
-          // Use default remark
-        }
-
-        return {
-          vless_uri: uri,
-          remark: remark,
-        }
-      })
 
     if (entries.length === 0) {
       return new Response(
@@ -99,24 +80,57 @@ serve(async (req: Request) => {
       )
     }
 
-    // Bulk insert
-    const { data, error } = await supabaseAdmin
+    const finalPackName = (pack_name || "").trim() || `پک ${new Date().toLocaleDateString("fa-IR")}`
+    const finalCreatorName = (creator_name || "").trim() || "مدیر سیستم"
+
+    // 1. Create the config pack
+    const { data: pack, error: packError } = await supabaseAdmin
+      .from("config_packs")
+      .insert({
+        pack_name: finalPackName,
+        creator_name: finalCreatorName,
+      })
+      .select("id, pack_name, creator_name")
+      .single()
+
+    if (packError || !pack) {
+      return new Response(
+        JSON.stringify({ error: "خطا در ایجاد بسته کانفیگ" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    // 2. Insert all configs with the pack_id
+    const configRows = entries.map((uri: string) => ({
+      vless_uri: uri,
+      remark: finalPackName,
+      pack_id: pack.id,
+    }))
+
+    const { data: inserted, error: insertError } = await supabaseAdmin
       .from("vless_configs")
-      .insert(entries)
+      .insert(configRows)
       .select("id")
 
-    if (error) {
+    if (insertError) {
+      // Clean up the pack if insert failed
+      await supabaseAdmin.from("config_packs").delete().eq("id", pack.id)
       return new Response(
-        JSON.stringify({ error: "خطا در اضافه کردن کانفیگ‌ها" }),
+        JSON.stringify({ error: "خطا در ذخیره کانفیگ‌ها" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
 
     return new Response(
       JSON.stringify({
-        message: `${entries.length} کانفیگ با موفقیت اضافه شد`,
+        message: `✅ بسته "${finalPackName}" با ${entries.length} کانفیگ با موفقیت اضافه شد`,
         count: entries.length,
-        ids: data?.map((d: any) => d.id) || [],
+        pack: {
+          id: pack.id,
+          name: finalPackName,
+          creator: finalCreatorName,
+        },
+        ids: inserted?.map((d: any) => d.id) || [],
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     )

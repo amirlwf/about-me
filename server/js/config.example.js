@@ -20,4 +20,8 @@ export const FUNCTION_URLS = {
   adminDeleteUser: `${SUPABASE_URL}/functions/v1/admin-delete-user`,
   adminBanUser: `${SUPABASE_URL}/functions/v1/admin-ban-user`,
   adminDeleteVideo: `${SUPABASE_URL}/functions/v1/admin-delete-video`,
+  adminGetPacks: `${SUPABASE_URL}/functions/v1/admin-get-packs`,
+  adminReassignPack: `${SUPABASE_URL}/functions/v1/admin-reassign-pack`,
+  adminUpdatePackConfigs: `${SUPABASE_URL}/functions/v1/admin-update-pack-configs`,
+  adminGetPackConfigs: `${SUPABASE_URL}/functions/v1/admin-get-pack-configs`,
 };
