@@ -175,8 +175,8 @@
     // ============================================================
     // Auth Check
     // ============================================================
+    const supabase = getSupabase();
     (async function checkExistingSession() {
-      const supabase = getSupabase();
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         window.location.href = "dashboard.html";

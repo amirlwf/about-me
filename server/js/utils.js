@@ -38,7 +38,13 @@ export async function apiCall(url, options = {}) {
     },
   });
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    // Response was not valid JSON (e.g., HTML error page from Supabase)
+    throw new Error("خطای ناشناخته");
+  }
 
   if (!response.ok) {
     throw new Error(data.error || "خطای ناشناخته");
