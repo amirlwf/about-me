@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VLESS - پنل کاربری</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    // Prevent FOUC - set theme before paint
+    (function() {
+      var theme = localStorage.getItem('vless-theme');
+      if (theme) document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="dashboard.html" class="navbar-brand">
+      <span class="icon" style="color:var(--white);">⚡</span>
+      <span>VLESS</span>
+    </a>
+    <div class="navbar-actions">
+      <span class="navbar-user" id="userDisplay"></span>
+      <button class="navbar-logout" onclick="handleLogout()">خروج</button>
+    </div>
+  </nav>
+
+  <div class="container" style="padding-top: 32px; padding-bottom: 32px;">
+    <!-- Alert Container -->
+    <div id="alertContainer"></div>
+
+    <!-- Welcome Section -->
+    <div class="section" id="welcomeSection" style="display:none;">
+      <div class="card card-wide">
+        <div class="card-title">
+          <span class="icon">→</span>
+          <span>خوش آمدید، <span id="welcomeName"></span></span>
+        </div>          <p style="color: var(--gray-500); margin-bottom: 20px; font-size: 0.9rem;">
+          از پنل کاربری خود می‌توانید کانفیگ VLESS خود را دریافت و مدیریت کنید.
+        </p>
+      </div>
+    </div>
+
+    <!-- Config Section -->
+    <div class="section" id="configSection" style="display:none;">
+      <div class="card card-wide">
+        <div class="card-title">            <span class="icon">→</span>
+          <span>کانفیگ من</span>
+        </div>
+
+        <!-- No Config State -->
+        <div id="noConfigState">
+          <div class="empty-state">
+            <div class="icon">◇</div>
+            <p>شما هنوز کانفیگی دریافت نکرده‌اید</p>
+            <p style="margin-top: 8px; font-size: 0.82rem; color: var(--gray-600);">روی دکمه زیر کلیک کنید تا کانفیگ اختصاصی شما تخصیص یابد</p>
+          </div>
+          <button class="btn btn-primary btn-block" id="getConfigBtn" onclick="handleGetConfig()" style="margin-top: 16px;">
+            دریافت کانفیگ من →
+          </button>
+        </div>
+
+        <!-- Config Display State -->
+        <div id="configDisplayState" style="display:none;">
+          <div class="config-box">
+            <button class="copy-btn" id="copyBtn" onclick="handleCopy()">کپی</button>
+            <pre class="config-text" id="configText"></pre>
+          </div>
+          <p style="margin-top: 12px; font-size: 0.78rem; color: var(--gray-600);">
+            این کانفیگ منحصر به فرد شماست و قابل انتقال به دیگران نیست
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tutorial Videos Section -->
+    <div class="section" id="videosSection" style="display:none;">
+      <div class="card card-full">
+        <div class="card-title">
+          <span class="icon">→</span>
+          <span>آموزش اتصال</span>
+        </div>
+        <p style="color: var(--gray-500); margin-bottom: 20px; font-size: 0.9rem;">
+          با تماشای ویدیوهای زیر نحوه اتصال به کانفیگ را یاد بگیرید
+        </p>
+
+        <div id="videosContainer">
+          <div class="empty-state">
+            <div class="icon">◇</div>
+            <p>هنوز ویدیوی آموزشی اضافه نشده است</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>ساخته شده توسط <a href="https://amirlwf.ir" target="_blank">amirlwf.ir</a></p>
+  </div>
+
+  <!-- Noise Overlay -->
+  <div class="noise-overlay"></div>
+
+  <!-- Theme Toggle -->
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="تغییر حالت نمایش">
+    <span class="icon-moon">🌙</span>
+    <span class="icon-sun">☀️</span>
+  </button>
+
+  <!-- Supabase JS CDN -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import {
+      getSupabase,
+      apiCallWithAuth,
+      copyToClipboard,
+      showError,
+      showSuccess,
+      hideAlert,
+      showLoading,
+      hideLoading,
+      getCurrentUser,
+      signOut,
+      toggleTheme,
+    } from "./js/utils.js";
+
+    window.toggleTheme = toggleTheme;
+
+    const supabase = getSupabase();
+    let currentUser = null;
+    let userConfig = null;
+
+    // ============================================================
+    // Auth Check
+    // ============================================================
+    async function init() {
+      currentUser = await getCurrentUser();
+      if (!currentUser) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      document.getElementById("userDisplay").textContent = currentUser.email;
+      document.getElementById("welcomeName").textContent =
+        currentUser.user_metadata?.display_name || currentUser.email.split("@")[0];
+
+      document.getElementById("welcomeSection").style.display = "block";
+      document.getElementById("configSection").style.display = "block";
+      document.getElementById("videosSection").style.display = "block";
+
+      await Promise.all([loadExistingConfig(), loadVideos()]);
+    }
+
+    // ============================================================
+    // Load existing config
+    // ============================================================
+    async function loadExistingConfig() {
+      try {
+        const { data: configs, error } = await supabase
+          .from("vless_configs")
+          .select("id, vless_uri, remark")
+          .eq("assigned_to", currentUser.id)
+          .limit(1);
+
+        if (error) throw error;
+
+        if (configs && configs.length > 0) {
+          userConfig = configs[0];
+          displayConfig(userConfig);
+        }
+      } catch (err) {
+        console.error("Error loading config:", err);
+      }
+    }
+
+    // ============================================================
+    // Display config
+    // ============================================================
+    function displayConfig(config) {
+      document.getElementById("noConfigState").style.display = "none";
+      document.getElementById("configDisplayState").style.display = "block";
+      document.getElementById("configText").textContent = config.vless_uri;
+    }
+
+    // ============================================================
+    // Get config (new assignment)
+    // ============================================================
+    window.handleGetConfig = async function() {
+      const btn = document.getElementById("getConfigBtn");
+      const alertContainer = document.getElementById("alertContainer");
+
+      showLoading(btn);
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+
+        const data = await apiCallWithAuth(FUNCTION_URLS.assignConfig, {
+          method: "POST",
+        });
+
+        userConfig = data;
+        displayConfig(data);
+        showSuccess("کانفیگ شما با موفقیت تخصیص یافت!", alertContainer);
+      } catch (err) {
+        showError(err.message || "خطا در دریافت کانفیگ", alertContainer);
+      } finally {
+        hideLoading(btn);
+      }
+    };
+
+    // ============================================================
+    // Copy to clipboard
+    // ============================================================
+    window.handleCopy = async function() {
+      const btn = document.getElementById("copyBtn");
+      const text = document.getElementById("configText").textContent;
+
+      const success = await copyToClipboard(text);
+      if (success) {
+        btn.textContent = "✅ کپی شد!";
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.textContent = "کپی";
+          btn.classList.remove("copied");
+        }, 2000);
+      } else {
+        btn.textContent = "❌ خطا";
+        setTimeout(() => {
+          btn.textContent = "کپی";
+        }, 2000);
+      }
+    };
+
+    // ============================================================
+    // Load videos
+    // ============================================================
+    async function loadVideos() {
+      try {
+        const { data: videos, error } = await supabase
+          .from("videos")
+          .select("*")
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true });
+
+        if (error) throw error;
+
+        if (!videos || videos.length === 0) {
+          return;
+        }
+
+        const container = document.getElementById("videosContainer");
+        container.innerHTML = '<div class="video-grid" id="videoGrid"></div>';
+        const grid = document.getElementById("videoGrid");
+
+        videos.forEach((video) => {
+          const card = document.createElement("div");
+          card.className = "video-card";
+
+          // Determine if it's an embed URL or direct video
+          let embedHtml = "";
+          if (video.video_url.includes("youtube.com") || video.video_url.includes("youtu.be")) {
+            // YouTube embed
+            let videoId = "";
+            if (video.video_url.includes("youtu.be")) {
+              videoId = video.video_url.split("youtu.be/")[1]?.split("?")[0];
+            } else {
+              const url = new URL(video.video_url);
+              videoId = url.searchParams.get("v") || "";
+            }
+            embedHtml = `<iframe class="video-embed" src="https://www.youtube.com/embed/${videoId}" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+          } else if (video.video_url.includes("vimeo.com")) {
+            const vimeoId = video.video_url.split("vimeo.com/")[1]?.split("?")[0];
+            embedHtml = `<iframe class="video-embed" src="https://player.vimeo.com/video/${vimeoId}" allowfullscreen allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
+          } else if (video.video_url.match(/\.(mp4|webm|ogg)$/i)) {
+            embedHtml = `<video class="video-embed" controls preload="metadata"><source src="${video.video_url}" type="video/mp4">مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند</video>`;
+          } else {
+            // Generic embed
+            embedHtml = `<iframe class="video-embed" src="${video.video_url}" allowfullscreen></iframe>`;
+          }
+
+          card.innerHTML = `
+            ${embedHtml}
+            <div class="video-info">
+              <div class="video-title">${escapeHtml(video.title)}</div>
+              ${video.description ? `<div class="video-desc">${escapeHtml(video.description)}</div>` : ""}
+            </div>
+          `;
+
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Error loading videos:", err);
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text || "";
+      return div.innerHTML;
+    }
+
+    // ============================================================
+    // Logout
+    // ============================================================
+    window.handleLogout = async function() {
+      await signOut();
+      window.location.href = "index.html";
+    };
+
+    // Initialize
+    init();
+  </script>
+</body>
+</html>
