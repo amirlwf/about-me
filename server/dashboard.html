@@ -278,7 +278,7 @@
             const vimeoId = video.video_url.split("vimeo.com/")[1]?.split("?")[0];
             embedHtml = `<iframe class="video-embed" src="https://player.vimeo.com/video/${vimeoId}" allowfullscreen allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
           } else if (video.video_url.match(/\.(mp4|webm|ogg)$/i)) {
-            embedHtml = buildCustomVideoPlayer(video.video_url);
+            embedHtml = `<video class="video-embed" controls preload="metadata"><source src="${escapeHtml(video.video_url)}" type="video/mp4">مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند</video>`;
           } else {
             // Generic embed
             embedHtml = `<iframe class="video-embed" src="${video.video_url}" allowfullscreen></iframe>`;
@@ -293,116 +293,10 @@
           `;
 
           grid.appendChild(card);
-
-          // Attach custom player listeners — any video element from buildCustomVideoPlayer
-          const videoEl = card.querySelector('video');
-          if (videoEl && videoEl.id) {
-            attachVideoListeners(videoEl.id);
-          }
         });
       } catch (err) {
         console.error("Error loading videos:", err);
       }
-    }
-
-    function buildCustomVideoPlayer(videoUrl) {
-      const id = 'vp-' + Math.random().toString(36).substring(2, 8);
-      return `
-        <div class="video-player-wrapper" id="${id}-wrapper">
-          <video id="${id}" preload="metadata" playsinline>
-            <source src="${escapeHtml(videoUrl)}" type="video/mp4">
-            مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند
-          </video>
-          <div class="video-player-controls">
-            <button class="vp-play-btn" onclick="togglePlay('${id}')">▶</button>
-            <input type="range" class="vp-progress" id="${id}-progress" value="0" min="0" max="100" oninput="seekVideo('${id}', this.value)">
-            <span class="vp-time" id="${id}-time">0:00 / 0:00</span>
-            <input type="range" class="vp-volume" id="${id}-volume" value="100" min="0" max="100" oninput="setVolume('${id}', this.value)">
-            <button class="vp-fullscreen-btn" onclick="toggleFullscreen('${id}-wrapper')">⛶</button>
-          </div>
-        </div>`;
-    }
-
-    window.togglePlay = function(id) {
-      const video = document.getElementById(id);
-      if (!video) return;
-      const btn = video.parentElement.querySelector('.vp-play-btn');
-      if (video.paused) {
-        video.play();
-        btn.textContent = '⏸';
-      } else {
-        video.pause();
-        btn.textContent = '▶';
-      }
-    };
-
-    window.seekVideo = function(id, value) {
-      const video = document.getElementById(id);
-      if (!video || !video.duration) return;
-      video.currentTime = (value / 100) * video.duration;
-    };
-
-    window.setVolume = function(id, value) {
-      const video = document.getElementById(id);
-      if (!video) return;
-      video.volume = value / 100;
-    };
-
-    window.toggleFullscreen = function(wrapperId) {
-      const wrapper = document.getElementById(wrapperId);
-      if (!wrapper) return;
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else {
-        wrapper.requestFullscreen();
-      }
-    };
-
-    // Attach timeupdate/progress listeners after DOM update
-    function attachVideoListeners(id) {
-      const video = document.getElementById(id);
-      if (!video) return;
-      const progress = document.getElementById(id + '-progress');
-      const timeDisplay = document.getElementById(id + '-time');
-      if (!progress || !timeDisplay) return;
-
-      video.addEventListener('timeupdate', function() {
-        if (this.duration) {
-          progress.value = (this.currentTime / this.duration) * 100;
-          const cur = formatTime(this.currentTime);
-          const dur = formatTime(this.duration);
-          timeDisplay.textContent = cur + ' / ' + dur;
-        }
-      });
-
-      video.addEventListener('ended', function() {
-        const btn = this.parentElement.querySelector('.vp-play-btn');
-        if (btn) btn.textContent = '▶';
-      });
-
-      // Show controls on mouse move, hide after inactivity
-      const wrapper = video.parentElement;
-      let timeout;
-      wrapper.addEventListener('mousemove', function() {
-        this.classList.add('show-controls');
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          if (!this.querySelector('video')?.paused) {
-            this.classList.remove('show-controls');
-          }
-        }, 3000);
-      });
-      wrapper.addEventListener('mouseleave', function() {
-        if (!this.querySelector('video')?.paused) {
-          this.classList.remove('show-controls');
-        }
-      });
-    }
-
-    function formatTime(seconds) {
-      const m = Math.floor(seconds / 60);
-      const s = Math.floor(seconds % 60);
-      return m + ':' + s.toString().padStart(2, '0');
     }
 
     function escapeHtml(text) {
