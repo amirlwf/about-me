@@ -41,18 +41,51 @@ serve(async (req: Request) => {
     }
 
     const { data: profiles } = await supabaseAdmin.from("user_profiles").select("*")
-    const { data: configs } = await supabaseAdmin.from("vless_configs").select("id, vless_uri, remark, assigned_to, assigned_at").not("assigned_to", "is", null)
+
+    // Get all packs (for users who have packs assigned)
+    const { data: packs } = await supabaseAdmin
+      .from("config_packs")
+      .select("id, pack_name, creator_name, assigned_to, assigned_at")
+      .not("assigned_to", "is", null)
+
+    // Get individual configs for backward compat (users without packs)
+    const { data: individualConfigs } = await supabaseAdmin
+      .from("vless_configs")
+      .select("id, vless_uri, remark, assigned_to, assigned_at")
+      .not("assigned_to", "is", null)
+      .is("pack_id", null)
 
     const users = authUsers.users.map((authUser: any) => {
       const profile = profiles?.find((p: any) => p.id === authUser.id)
-      const config = configs?.find((c: any) => c.assigned_to === authUser.id)
+
+      // Check if user has a pack
+      const pack = packs?.find((p: any) => p.assigned_to === authUser.id)
+
+      // Check for individual config (backward compat)
+      const individualConfig = !pack ? individualConfigs?.find((c: any) => c.assigned_to === authUser.id) : null
+
       return {
         id: authUser.id,
         email: authUser.email,
         display_name: profile?.display_name || authUser.user_metadata?.display_name || "",
         is_banned: profile?.is_banned || false,
         created_at: authUser.created_at,
-        config: config ? { id: config.id, remark: config.remark, assigned_at: config.assigned_at } : null,
+        config: pack
+          ? {
+              type: "pack",
+              id: pack.id,
+              pack_name: pack.pack_name,
+              creator_name: pack.creator_name,
+              assigned_at: pack.assigned_at,
+            }
+          : individualConfig
+            ? {
+                type: "single",
+                id: individualConfig.id,
+                remark: individualConfig.remark,
+                assigned_at: individualConfig.assigned_at,
+              }
+            : null,
       }
     })
 
