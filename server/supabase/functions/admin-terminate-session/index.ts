@@ -30,27 +30,12 @@ async function verifyAdminSession(
   return { valid: true, admin_id: session.admin_id }
 }
 
-function generateCode(): string {
-  // Generate a 6-digit numeric code using cryptographic randomness
-  // Use rejection sampling to avoid bias (re-roll values >= 250)
-  const digits: number[] = []
-  const byte = new Uint8Array(1)
-  while (digits.length < 6) {
-    crypto.getRandomValues(byte)
-    if (byte[0] < 250) {
-      digits.push(byte[0] % 10)
-    }
-  }
-  return digits.join("")
-}
-
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
   }
 
   try {
-    // Verify admin session
     const authHeader = req.headers.get("Authorization")
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
@@ -65,69 +50,58 @@ serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     )
 
-    const session = await verifyAdminSession(supabaseAdmin, token)
-    if (!session.valid) {
+    const currentSession = await verifyAdminSession(supabaseAdmin, token)
+    if (!currentSession.valid) {
       return new Response(
-        JSON.stringify({ error: "جلسه مدیر منقضی شده. لطفاً دوباره وارد شوید" }),
+        JSON.stringify({ error: "جلسه مدیر منقضی شده" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
 
-    // Read custom duration from request body (default 5 minutes, max 43200 minutes = 30 days)
-    let durationMinutes = 5
-    try {
-      const body = await req.json()
-      if (body.duration_minutes && typeof body.duration_minutes === 'number') {
-        durationMinutes = Math.max(1, Math.min(43200, Math.floor(body.duration_minutes)))
-      }
-    } catch {
-      // No body or invalid JSON — use default 5 minutes
+    const { session_id } = await req.json()
+    if (!session_id) {
+      return new Response(
+        JSON.stringify({ error: "شناسه جلسه الزامی است" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
     }
 
-    // Generate a unique code
-    let code = generateCode()
-    let attempts = 0
-    while (attempts < 10) {
-      const { data: existing } = await supabaseAdmin
-        .from("entry_codes")
-        .select("id")
-        .eq("code", code)
-        .single()
-
-      if (!existing) break
-      code = generateCode()
-      attempts++
-    }
-
-    // Create the entry code with custom duration
-    const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString()
-
-    const { data, error } = await supabaseAdmin
-      .from("entry_codes")
-      .insert({
-        code: code,
-        is_active: true,
-        activated_at: new Date().toISOString(),
-        expires_at: expiresAt,
-        created_by: session.admin_id,
-      })
-      .select("id, code, expires_at")
+    // Verify the target session belongs to the same admin
+    const { data: targetSession, error: fetchError } = await supabaseAdmin
+      .from("admin_sessions")
+      .select("id, admin_id")
+      .eq("id", session_id)
       .single()
+
+    if (fetchError || !targetSession) {
+      return new Response(
+        JSON.stringify({ error: "جلسه مورد نظر یافت نشد" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    if (targetSession.admin_id !== currentSession.admin_id) {
+      return new Response(
+        JSON.stringify({ error: "شما فقط می‌توانید جلسات خود را مدیریت کنید" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    // Set expires_at to now to terminate the session
+    const { error } = await supabaseAdmin
+      .from("admin_sessions")
+      .update({ expires_at: new Date().toISOString() })
+      .eq("id", session_id)
 
     if (error) {
       return new Response(
-        JSON.stringify({ error: "خطا در ایجاد کد ورود" }),
+        JSON.stringify({ error: "خطا در پایان دادن به جلسه" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
 
     return new Response(
-      JSON.stringify({
-        message: "کد ورود با موفقیت فعال شد",
-        code: data.code,
-        expires_at: data.expires_at,
-        id: data.id,
-      }),
+      JSON.stringify({ message: "جلسه با موفقیت پایان یافت" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     )
   } catch (error) {

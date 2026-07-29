@@ -178,30 +178,77 @@
 
       <!-- ===== CODES TAB ===== -->
       <div class="tab-content" id="tab-codes">
+        <!-- Generate Quick Code -->
         <div class="card card-wide">
           <div class="card-title">
-            <span class="icon">→</span>
-            <span>فعال‌سازی کد ورود</span>
+            <span class="icon">⚡</span>
+            <span>کد سریع (۵ دقیقه)</span>
           </div>
           <p style="color: var(--gray-500); margin-bottom: 16px; font-size: 0.9rem;">
-            یک کد ورود یکبار مصرف با مدت اعتبار دلخواه ایجاد کنید.
+            یک کد ورود یکبار مصرف با اعتبار ۵ دقیقه ایجاد کنید.
           </p>
-          <div id="codeAlert"></div>
-          <div class="form-group" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-            <label class="form-label" style="margin-bottom:0;">مدت اعتبار:</label>
-            <input type="number" class="form-input" id="codeDuration" value="5" min="1" max="1440" style="width:100px; text-align:center; direction:ltr;">
-            <span style="color:var(--text-secondary); font-size:0.85rem;">دقیقه (حداکثر ۱۴۴۰ = ۲۴ ساعت)</span>
-          </div>
-          <button class="btn btn-primary" id="activateCodeBtn" onclick="handleActivateCode()">
-            ایجاد کد جدید →
+          <div id="quickCodeAlert"></div>
+          <button class="btn btn-primary" id="quickCodeBtn" onclick="handleQuickCode()">
+            ⚡ ایجاد کد سریع →
           </button>
-          <div id="codeResult" style="display:none; margin-top: 24px;">
+          <div id="quickCodeResult" style="display:none; margin-top: 24px;">
             <div class="code-display">
-              <span class="code-value" id="generatedCode"></span>
+              <span class="code-value" id="quickGeneratedCode"></span>
               <div>
-                <button class="btn btn-sm btn-secondary" onclick="copyCode()">کپی کد</button>
-                <div class="code-timer" id="codeTimer">اعتبار: ۵ دقیقه</div>
+                <button class="btn btn-sm btn-secondary" onclick="copyQuickCode()">کپی کد</button>
+                <div class="code-timer" id="quickCodeTimer">اعتبار: ۵ دقیقه</div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generate Special Code -->
+        <div class="card card-wide" style="margin-top: 20px;">
+          <div class="card-title">
+            <span class="icon">⏱️</span>
+            <span>کد ویژه (۱ تا ۳۰ روز)</span>
+          </div>
+          <p style="color: var(--gray-500); margin-bottom: 16px; font-size: 0.9rem;">
+            یک کد ورود یکبار مصرف با اعتبار چند روزه ایجاد کنید.
+          </p>
+          <div id="specialCodeAlert"></div>
+          <div class="form-group" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <label class="form-label" style="margin-bottom:0;">مدت اعتبار (روز):</label>
+            <select class="form-input" id="specialCodeDays" style="width:100px; text-align:center;">
+              <option value="1">۱ روز</option>
+              <option value="2">۲ روز</option>
+              <option value="3">۳ روز</option>
+              <option value="5">۵ روز</option>
+              <option value="7" selected>۷ روز</option>
+              <option value="14">۱۴ روز</option>
+              <option value="21">۲۱ روز</option>
+              <option value="30">۳۰ روز</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="specialCodeBtn" onclick="handleSpecialCode()" style="background: linear-gradient(135deg, var(--accent), #9333ea);">
+            ⏱️ ایجاد کد ویژه →
+          </button>
+          <div id="specialCodeResult" style="display:none; margin-top: 24px;">
+            <div class="code-display">
+              <span class="code-value" id="specialGeneratedCode"></span>
+              <div>
+                <button class="btn btn-sm btn-secondary" onclick="copySpecialCode()">کپی کد</button>
+                <div class="code-timer" id="specialCodeInfo">اعتبار: —</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Codes List -->
+        <div class="card card-wide" style="margin-top: 20px;">
+          <div class="card-title">
+            <span class="icon">📋</span>
+            <span>کدهای فعال و اخیر</span>
+          </div>
+          <div id="activeCodesList">
+            <div class="empty-state">
+              <div class="icon">◇</div>
+              <p>در حال بارگذاری کدها...</p>
             </div>
           </div>
         </div>
@@ -254,6 +301,24 @@
           <button class="btn btn-primary" id="resetUserPassBtn" onclick="handleResetUserPassword()">
             تغییر رمز عبور کاربر →
           </button>
+        </div>
+
+        <!-- Session Management -->
+        <div class="card card-full" style="margin-top: 24px;">
+          <div class="card-title">
+            <span class="icon">💻</span>
+            <span>جلسات فعال مدیر</span>
+          </div>
+          <p style="color: var(--gray-500); margin-bottom: 16px; font-size: 0.9rem;">
+            جلسات فعال ورود شما به پنل مدیریت. می‌توانید سایر جلسات را پایان دهید.
+          </p>
+          <div id="sessionsAlert"></div>
+          <div id="sessionsContainer">
+            <div class="empty-state">
+              <div class="icon">◇</div>
+              <p>در حال بارگذاری جلسات...</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -418,6 +483,7 @@
       isAdminLoggedIn,
       escapeHtml,
       formatDate,
+      timeAgo,
       toggleTheme,
       getSupabase,
     } from "./js/utils.js";
@@ -498,10 +564,14 @@
     };
 
     window.handleAdminLogout = function() {
-      // Clear any running code countdown timer
-      if (codeCountdownInterval) {
-        clearInterval(codeCountdownInterval);
-        codeCountdownInterval = null;
+      // Clear any running code countdown timers
+      if (quickCodeInterval) {
+        clearInterval(quickCodeInterval);
+        quickCodeInterval = null;
+      }
+      if (specialCodeInterval) {
+        clearInterval(specialCodeInterval);
+        specialCodeInterval = null;
       }
       clearAdminToken();
       document.getElementById("adminLoginView").style.display = "flex";
@@ -523,7 +593,9 @@
       // Load data for specific tabs
       if (tab === "users") loadUsers();
       if (tab === "configs") loadPacks();
+      if (tab === "codes") loadEntryCodes();
       if (tab === "videos") loadExistingVideos();
+      if (tab === "settings") loadSessions();
     };
 
     window.switchVideoTab = function(mode) {
@@ -675,35 +747,50 @@
     };
 
     // ============================================================
-    // Activate Code
+    // Quick Code (5 minutes)
     // ============================================================
-    window.handleActivateCode = async function() {
-      const btn = document.getElementById("activateCodeBtn");
-      const alertContainer = document.getElementById("codeAlert");
+    let quickCodeInterval = null;
 
-      const duration = parseInt(document.getElementById("codeDuration").value) || 5;
-      if (duration < 1 || duration > 1440) {
-        showError("مدت اعتبار باید بین ۱ تا ۱۴۴۰ دقیقه باشد", alertContainer);
-        return;
-      }
+    window.handleQuickCode = async function() {
+      const btn = document.getElementById("quickCodeBtn");
+      const alertContainer = document.getElementById("quickCodeAlert");
+
+      if (quickCodeInterval) clearInterval(quickCodeInterval);
 
       showLoading(btn);
       hideAlert(alertContainer);
 
       try {
         const { FUNCTION_URLS } = await import("./js/config.js");
-
         const data = await adminApiCall(FUNCTION_URLS.adminActivateCode, {
           method: "POST",
-          body: JSON.stringify({ duration_minutes: duration }),
+          body: JSON.stringify({ duration_minutes: 5 }),
         });
 
-        showSuccess("کد با موفقیت ایجاد شد!", alertContainer);
-        document.getElementById("generatedCode").textContent = data.code;
-        document.getElementById("codeResult").style.display = "block";
+        showSuccess("✅ کد سریع با موفقیت ایجاد شد!", alertContainer);
+        document.getElementById("quickGeneratedCode").textContent = data.code;
+        document.getElementById("quickCodeResult").style.display = "block";
 
         // Start countdown
-        startCodeCountdown(new Date(data.expires_at));
+        const timerEl = document.getElementById("quickCodeTimer");
+        quickCodeInterval = setInterval(() => {
+          const now = new Date();
+          const diff = new Date(data.expires_at) - now;
+
+          if (diff <= 0) {
+            clearInterval(quickCodeInterval);
+            timerEl.textContent = "⏰ کد منقضی شد";
+            timerEl.classList.add("urgent");
+            return;
+          }
+
+          const mins = Math.floor(diff / 60000);
+          const secs = Math.floor((diff % 60000) / 1000);
+          timerEl.textContent = `⏱ اعتبار: ${mins}:${secs.toString().padStart(2, "0")}`;
+          timerEl.classList.toggle("urgent", mins < 1);
+        }, 1000);
+
+        loadEntryCodes(); // Refresh codes list
       } catch (err) {
         showError(err.message || "خطا در ایجاد کد", alertContainer);
       } finally {
@@ -711,32 +798,69 @@
       }
     };
 
-    let codeCountdownInterval = null;
+    window.copyQuickCode = async function() {
+      const code = document.getElementById("quickGeneratedCode").textContent;
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch {
+        const textarea = document.createElement("textarea");
+        textarea.value = code;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+    };
 
-    function startCodeCountdown(expiresAt) {
-      if (codeCountdownInterval) clearInterval(codeCountdownInterval);
+    // ============================================================
+    // Special Code (1-30 days)
+    // ============================================================
+    let specialCodeInterval = null;
 
-      const timerEl = document.getElementById("codeTimer");
-      codeCountdownInterval = setInterval(() => {
-        const now = new Date();
-        const diff = new Date(expiresAt) - now;
+    window.handleSpecialCode = async function() {
+      const btn = document.getElementById("specialCodeBtn");
+      const alertContainer = document.getElementById("specialCodeAlert");
 
-        if (diff <= 0) {
-          clearInterval(codeCountdownInterval);
-          timerEl.textContent = "⏰ کد منقضی شد";
-          timerEl.classList.add("urgent");
-          return;
-        }
+      if (specialCodeInterval) clearInterval(specialCodeInterval);
 
-        const mins = Math.floor(diff / 60000);
-        const secs = Math.floor((diff % 60000) / 1000);
-        timerEl.textContent = `اعتبار: ${mins}:${secs.toString().padStart(2, "0")}`;
-        timerEl.classList.toggle("urgent", mins < 1);
-      }, 1000);
-    }
+      const days = parseInt(document.getElementById("specialCodeDays").value) || 7;
+      const durationMinutes = days * 24 * 60;
 
-    window.copyCode = async function() {
-      const code = document.getElementById("generatedCode").textContent;
+      showLoading(btn);
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        const data = await adminApiCall(FUNCTION_URLS.adminActivateCode, {
+          method: "POST",
+          body: JSON.stringify({ duration_minutes: durationMinutes }),
+        });
+
+        showSuccess("✅ کد ویژه با موفقیت ایجاد شد!", alertContainer);
+        document.getElementById("specialGeneratedCode").textContent = data.code;
+        document.getElementById("specialCodeResult").style.display = "block";
+
+        // Show expiry date instead of countdown for long-lived codes
+        const expiresDate = new Date(data.expires_at);
+        const dateStr = new Intl.DateTimeFormat("fa-IR", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(expiresDate);
+        document.getElementById("specialCodeInfo").textContent = `📅 اعتبار تا: ${dateStr}`;
+
+        loadEntryCodes(); // Refresh codes list
+      } catch (err) {
+        showError(err.message || "خطا در ایجاد کد", alertContainer);
+      } finally {
+        hideLoading(btn);
+      }
+    };
+
+    window.copySpecialCode = async function() {
+      const code = document.getElementById("specialGeneratedCode").textContent;
       try {
         await navigator.clipboard.writeText(code);
       } catch {
@@ -1353,6 +1477,204 @@
         loadUsers(); // Refresh users table too since their config changed
       } catch (err) {
         showError(err.message || "خطا در لغو تخصیص", alertContainer);
+      }
+    };
+
+    // ============================================================
+    // Entry Codes List (Active & Recent)
+    // ============================================================
+    async function loadEntryCodes() {
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        const data = await adminApiCall(FUNCTION_URLS.adminGetEntryCodes);
+
+        const container = document.getElementById("activeCodesList");
+        const codes = data.codes || [];
+
+        if (codes.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">◇</div>
+              <p>هنوز کدی ایجاد نشده</p>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>کد</th>
+                  <th>وضعیت</th>
+                  <th>ایجاد در</th>
+                  <th>انقضا</th>
+                  <th>استفاده شده توسط</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${codes.map(c => {
+                  const now = new Date();
+                  const expiresAt = new Date(c.expires_at);
+                  const isExpired = expiresAt < now;
+
+                  let statusBadge = '';
+                  if (c.used_by) {
+                    statusBadge = '<span class="badge badge-warning">استفاده شده</span>';
+                  } else if (isExpired) {
+                    statusBadge = '<span class="badge badge-error">منقضی</span>';
+                  } else if (c.is_active) {
+                    statusBadge = '<span class="badge badge-success">فعال</span>';
+                  } else {
+                    statusBadge = '<span class="badge badge-error">غیرفعال</span>';
+                  }
+
+                  // Calculate remaining time for active codes
+                  let expiryText = formatDate(c.expires_at);
+                  if (!c.used_by && !isExpired && c.is_active) {
+                    const diffMs = expiresAt - now;
+                    if (diffMs < 3600000) {
+                      const mins = Math.floor(diffMs / 60000);
+                      expiryText += ` <small style="color:var(--accent)">(${mins} دقیقه باقی)</small>`;
+                    } else if (diffMs < 86400000) {
+                      const hours = Math.floor(diffMs / 3600000);
+                      expiryText += ` <small style="color:var(--text-secondary)">(${hours} ساعت باقی)</small>`;
+                    } else {
+                      const days = Math.floor(diffMs / 86400000);
+                      expiryText += ` <small style="color:var(--text-secondary)">(${days} روز باقی)</small>`;
+                    }
+                  } else if (isExpired && !c.used_by) {
+                    expiryText += ' <small style="color:var(--error)">(منقضی شده)</small>';
+                  }
+
+                  return `<tr>
+                    <td><code style="direction:ltr; display:inline-block; font-size:0.9rem; font-weight:600;">${escapeHtml(c.code)}</code></td>
+                    <td>${statusBadge}</td>
+                    <td><small>${formatDate(c.created_at)}</small></td>
+                    <td><small>${expiryText}</small></td>
+                    <td><small>${c.used_by ? 'کاربر ' + c.used_by.substring(0, 8) + '...' : '-'}</small></td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 8px;">نمایش ${codes.length} کد اخیر</p>`;
+      } catch (err) {
+        const container = document.getElementById("activeCodesList");
+        container.innerHTML = `<div class="empty-state"><div class="icon">◇</div><p>خطا در بارگذاری کدها: ${escapeHtml(err.message)}</p></div>`;
+      }
+    }
+
+    // ============================================================
+    // Parse User Agent to readable OS + Browser
+    // ============================================================
+    function parseUserAgent(ua) {
+      if (!ua) return { os: 'نامشخص', browser: 'نامشخص', icon: '💻' };
+
+      let os = 'نامشخص';
+      let icon = '💻';
+
+      if (/windows/i.test(ua)) {
+        os = 'Windows';
+        icon = '🪟';
+      } else if (/macintosh|mac os/i.test(ua)) {
+        os = 'macOS';
+        icon = '🍎';
+      } else if (/linux/i.test(ua) && !/android/i.test(ua)) {
+        os = 'Linux';
+        icon = '🐧';
+      } else if (/android/i.test(ua)) {
+        os = 'Android';
+        icon = '📱';
+      } else if (/iphone|ipad|ios/i.test(ua)) {
+        os = 'iOS';
+        icon = '📱';
+      }
+
+      let browser = 'نامشخص';
+      if (/edg/i.test(ua)) browser = 'Edge';
+      else if (/chrome/i.test(ua) && !/edg/i.test(ua)) browser = 'Chrome';
+      else if (/firefox/i.test(ua)) browser = 'Firefox';
+      else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = 'Safari';
+      else if (/opera|opr/i.test(ua)) browser = 'Opera';
+
+      return { os, browser, icon };
+    }
+
+    // ============================================================
+    // Active Sessions Management
+    // ============================================================
+    async function loadSessions() {
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        const data = await adminApiCall(FUNCTION_URLS.adminGetSessions);
+
+        const container = document.getElementById("sessionsContainer");
+        const sessions = data.sessions || [];
+        const currentSessionId = data.current_session_id;
+
+        if (sessions.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">◇</div>
+              <p>هیچ جلسه فعالی یافت نشد</p>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="sessions-list">
+            ${sessions.map(s => {
+              const isCurrent = s.id === currentSessionId;
+              const device = parseUserAgent(s.user_agent || '');
+              const createdDate = new Date(s.created_at);
+              const expiresDate = new Date(s.expires_at);
+              const timeAgoStr = timeAgo(s.created_at);
+
+              return `<div class="session-item ${isCurrent ? 'session-current' : ''}">
+                <div class="session-device-info">
+                  <span class="session-icon">${device.icon}</span>
+                  <div class="session-details">
+                    <strong>${device.os} — ${device.browser}</strong>
+                    <div class="session-meta">
+                      <span>📅 ${formatDate(s.created_at)} (${timeAgoStr})</span>
+                      ${s.ip_address ? `<span>🌐 ${escapeHtml(s.ip_address)}</span>` : ''}
+                    </div>
+                  </div>
+                </div>
+                <div class="session-actions">
+                  ${isCurrent
+                    ? '<span class="badge badge-success">✅ جلسه فعلی</span>'
+                    : `<button class="btn btn-sm btn-danger" onclick="handleTerminateSession('${s.id}')">
+                        🔴 پایان جلسه
+                      </button>`
+                  }
+                </div>
+              </div>`;
+            }).join('')}
+          </div>`;
+      } catch (err) {
+        const container = document.getElementById("sessionsContainer");
+        container.innerHTML = `<div class="empty-state"><div class="icon">◇</div><p>خطا: ${escapeHtml(err.message)}</p></div>`;
+      }
+    }
+
+    window.handleTerminateSession = async function(sessionId) {
+      if (!confirm("آیا از پایان دادن به این جلسه اطمینان دارید؟")) return;
+
+      const alertContainer = document.getElementById("sessionsAlert");
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        const data = await adminApiCall(FUNCTION_URLS.adminTerminateSession, {
+          method: "POST",
+          body: JSON.stringify({ session_id: sessionId }),
+        });
+        showSuccess(data.message, alertContainer);
+        loadSessions(); // Refresh the list
+      } catch (err) {
+        showError(err.message || "خطا در پایان جلسه", alertContainer);
       }
     };
 

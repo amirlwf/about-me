@@ -89,6 +89,11 @@ serve(async (req: Request) => {
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("")
 
+    // Capture device info
+    const userAgent = req.headers.get("User-Agent") || ""
+    const ipAddress = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+                      req.headers.get("x-real-ip") || ""
+
     // Store session (expires in 24 hours)
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
@@ -96,6 +101,8 @@ serve(async (req: Request) => {
       admin_id: admin.id,
       token_hash: tokenHash,
       expires_at: expiresAt,
+      user_agent: userAgent,
+      ip_address: ipAddress,
     })
 
     return new Response(

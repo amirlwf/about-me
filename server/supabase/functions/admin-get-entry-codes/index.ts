@@ -30,27 +30,12 @@ async function verifyAdminSession(
   return { valid: true, admin_id: session.admin_id }
 }
 
-function generateCode(): string {
-  // Generate a 6-digit numeric code using cryptographic randomness
-  // Use rejection sampling to avoid bias (re-roll values >= 250)
-  const digits: number[] = []
-  const byte = new Uint8Array(1)
-  while (digits.length < 6) {
-    crypto.getRandomValues(byte)
-    if (byte[0] < 250) {
-      digits.push(byte[0] % 10)
-    }
-  }
-  return digits.join("")
-}
-
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
   }
 
   try {
-    // Verify admin session
     const authHeader = req.headers.get("Authorization")
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
@@ -68,66 +53,27 @@ serve(async (req: Request) => {
     const session = await verifyAdminSession(supabaseAdmin, token)
     if (!session.valid) {
       return new Response(
-        JSON.stringify({ error: "جلسه مدیر منقضی شده. لطفاً دوباره وارد شوید" }),
+        JSON.stringify({ error: "جلسه مدیر منقضی شده" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
 
-    // Read custom duration from request body (default 5 minutes, max 43200 minutes = 30 days)
-    let durationMinutes = 5
-    try {
-      const body = await req.json()
-      if (body.duration_minutes && typeof body.duration_minutes === 'number') {
-        durationMinutes = Math.max(1, Math.min(43200, Math.floor(body.duration_minutes)))
-      }
-    } catch {
-      // No body or invalid JSON — use default 5 minutes
-    }
-
-    // Generate a unique code
-    let code = generateCode()
-    let attempts = 0
-    while (attempts < 10) {
-      const { data: existing } = await supabaseAdmin
-        .from("entry_codes")
-        .select("id")
-        .eq("code", code)
-        .single()
-
-      if (!existing) break
-      code = generateCode()
-      attempts++
-    }
-
-    // Create the entry code with custom duration
-    const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString()
-
-    const { data, error } = await supabaseAdmin
+    // Fetch all entry codes ordered by creation date (newest first)
+    const { data: codes, error } = await supabaseAdmin
       .from("entry_codes")
-      .insert({
-        code: code,
-        is_active: true,
-        activated_at: new Date().toISOString(),
-        expires_at: expiresAt,
-        created_by: session.admin_id,
-      })
-      .select("id, code, expires_at")
-      .single()
+      .select("id, code, is_active, activated_at, expires_at, used_by, used_at, created_by, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100)
 
     if (error) {
       return new Response(
-        JSON.stringify({ error: "خطا در ایجاد کد ورود" }),
+        JSON.stringify({ error: "خطا در دریافت کدهای ورود" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
 
     return new Response(
-      JSON.stringify({
-        message: "کد ورود با موفقیت فعال شد",
-        code: data.code,
-        expires_at: data.expires_at,
-        id: data.id,
-      }),
+      JSON.stringify({ codes: codes || [] }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     )
   } catch (error) {
