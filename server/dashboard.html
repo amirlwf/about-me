@@ -217,12 +217,11 @@
         container.innerHTML = `
           <div class="pack-header">
             <div class="pack-meta">
-              <span class="pack-badge">📦 بسته کانفیگ</span>
-              <strong class="pack-name">${escapeHtml(data.pack.pack_name)}</strong>
+              <span class="pack-badge">📦 ${escapeHtml(displayName)}'s Config</span>
             </div>
             <div class="pack-info">
-              <span>👤 کاربر: ${escapeHtml(displayName)}</span>
-              <span>🛠️ سازنده: ${escapeHtml(data.pack.creator_name)}</span>
+              <span>🛠️ ${escapeHtml(data.pack.creator_name)}</span>
+              <span>🏷️ amirlwf.ir</span>
             </div>
           </div>
           <div class="pack-configs-list">

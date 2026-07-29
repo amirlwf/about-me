@@ -133,8 +133,8 @@ serve(async (req: Request) => {
       .select("id, vless_uri")
       .eq("pack_id", new_pack_id)
 
-    // Personalize each config
-    const personalizationTag = `${newPack.pack_name} | سازنده: ${newPack.creator_name} | کاربر: ${displayName} | Made by amirlwf.ir`
+    // Personalize each config: "Amir's Config | amirlwf.ir"
+    const personalizationTag = `${displayName}'s Config | amirlwf.ir`
 
     for (const config of (newConfigs || [])) {
       await supabaseAdmin

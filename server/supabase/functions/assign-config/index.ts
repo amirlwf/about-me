@@ -138,7 +138,7 @@ serve(async (req: Request) => {
       }
 
       const config = assignResult[0]
-      const personalizedRemark = `${config.remark} | ${displayName} | Made by amirlwf.ir`
+      const personalizedRemark = `${displayName}'s Config | amirlwf.ir`
       await supabaseAdmin
         .from("vless_configs")
         .update({ remark: personalizedRemark })
@@ -175,8 +175,8 @@ serve(async (req: Request) => {
       )
     }
 
-    // Personalize each config's remark: "پک نام | سازنده: نام | کاربر: نام | Made by amirlwf.ir"
-    const personalizationTag = `${packInfo.pack_name} | سازنده: ${packInfo.creator_name} | کاربر: ${displayName} | Made by amirlwf.ir`
+    // Personalize each config: "Amir's Config | amirlwf.ir"
+    const personalizationTag = `${displayName}'s Config | amirlwf.ir`
 
     const personalizedConfigs = await Promise.all(
       packConfigs.map(async (config: any) => {
