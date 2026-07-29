@@ -321,10 +321,13 @@
       hideAlert(alertContainer);
 
       try {
-        const { FUNCTION_URLS } = await import("./js/config.js");
+        const { FUNCTION_URLS, SUPABASE_ANON_KEY } = await import("./js/config.js");
 
         const data = await apiCall(FUNCTION_URLS.adminLogin, {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
           body: JSON.stringify({ username, password }),
         });
 

@@ -26,6 +26,7 @@ export function getSupabase() {
 export async function apiCall(url, options = {}) {
   const defaultHeaders = {
     "Content-Type": "application/json",
+    "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
   };
 
   const response = await fetch(url, {
