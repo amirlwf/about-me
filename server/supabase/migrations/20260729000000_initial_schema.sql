@@ -255,12 +255,12 @@ CREATE POLICY "No direct access to admin users"
   ON public.admin_users FOR ALL
   USING (false);
 
--- Videos: authenticated users can read active videos
+-- Videos: anyone can read active videos (used by both dashboard users and admin panel)
 ALTER TABLE public.videos ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Authenticated users can view active videos"
+CREATE POLICY "Anyone can view active videos"
   ON public.videos FOR SELECT
-  USING (auth.role() = 'authenticated' AND is_active = TRUE);
+  USING (is_active = TRUE);
 
 CREATE POLICY "Service role full access to videos"
   ON public.videos FOR ALL
