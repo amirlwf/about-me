@@ -175,11 +175,13 @@
     // ============================================================
     // Auth Check
     // ============================================================
-    const supabase = getSupabase();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      window.location.href = "dashboard.html";
-    }
+    (async function checkExistingSession() {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        window.location.href = "dashboard.html";
+      }
+    })();
 
     // ============================================================
     // Tab switching

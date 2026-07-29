@@ -121,7 +121,7 @@ serve(async (req: Request) => {
     if (sessionError) {
       return new Response(
         JSON.stringify({ error: "حساب ساخته شد اما ورود ناموفق بود. لطفاً دوباره وارد شوید" }),
-        { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
 

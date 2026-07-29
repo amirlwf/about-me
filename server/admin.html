@@ -434,13 +434,25 @@
       const token = getAdminToken();
       if (!token) throw new Error("جلسه مدیر منقضی شده");
 
-      return apiCall(url, {
-        ...options,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          ...options.headers,
-        },
-      });
+      try {
+        return await apiCall(url, {
+          ...options,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...options.headers,
+          },
+        });
+      } catch (err) {
+        // If session expired or auth failed, redirect to login gracefully
+        if (err.message.includes("جلسه مدیر") || err.message.includes("احراز هویت")) {
+          clearAdminToken();
+          document.getElementById("adminLoginView").style.display = "flex";
+          document.getElementById("adminDashboardView").style.display = "none";
+          showError("خطای ناشناخته", document.getElementById("loginAlert"));
+          throw new Error("خطای ناشناخته");
+        }
+        throw err;
+      }
     }
 
     // ============================================================
@@ -675,7 +687,17 @@
         });
 
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
+        if (!response.ok) {
+          // Handle auth errors the same way as adminApiCall
+          if (response.status === 401) {
+            clearAdminToken();
+            document.getElementById("adminLoginView").style.display = "flex";
+            document.getElementById("adminDashboardView").style.display = "none";
+            showError("خطای ناشناخته", document.getElementById("loginAlert"));
+            return;
+          }
+          throw new Error(data.error);
+        }
 
         showSuccess("ویدیو با موفقیت آپلود شد", alertContainer);
         document.getElementById("fileVideoTitle").value = "";
