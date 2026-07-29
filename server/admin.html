@@ -80,15 +80,15 @@
           <div class="stat-label">کل کاربران</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statConfigs">0</div>
-          <div class="stat-label">کل کانفیگ‌ها</div>
+          <div class="stat-value" id="statPacks">0</div>
+          <div class="stat-label">کل پک‌ها</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statAssigned">0</div>
+          <div class="stat-value" id="statAssignedPacks">0</div>
           <div class="stat-label">تخصیص یافته</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statAvailable">0</div>
+          <div class="stat-value" id="statAvailablePacks">0</div>
           <div class="stat-label">موجود در انبار</div>
         </div>
       </div>
@@ -653,9 +653,9 @@
 
         // Update stats
         document.getElementById("statUsers").textContent = data.stats.total_users;
-        document.getElementById("statConfigs").textContent = data.stats.total_configs;
-        document.getElementById("statAssigned").textContent = data.stats.assigned_configs;
-        document.getElementById("statAvailable").textContent = data.stats.unassigned_configs;
+        document.getElementById("statPacks").textContent = data.stats.total_packs ?? data.stats.total_configs ?? 0;
+        document.getElementById("statAssignedPacks").textContent = data.stats.assigned_packs ?? data.stats.assigned_configs ?? 0;
+        document.getElementById("statAvailablePacks").textContent = data.stats.unassigned_packs ?? data.stats.unassigned_configs ?? 0;
 
         // Populate table
         const tbody = document.getElementById("usersTableBody");
