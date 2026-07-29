@@ -26,4 +26,7 @@ export const FUNCTION_URLS = {
   adminGetPackConfigs: `${SUPABASE_URL}/functions/v1/admin-get-pack-configs`,
   adminDeletePack: `${SUPABASE_URL}/functions/v1/admin-delete-pack`,
   adminUnassignPack: `${SUPABASE_URL}/functions/v1/admin-unassign-pack`,
+  adminGetEntryCodes: `${SUPABASE_URL}/functions/v1/admin-get-entry-codes`,
+  adminGetSessions: `${SUPABASE_URL}/functions/v1/admin-get-sessions`,
+  adminTerminateSession: `${SUPABASE_URL}/functions/v1/admin-terminate-session`,
 };
