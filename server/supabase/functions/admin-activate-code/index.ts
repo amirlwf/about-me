@@ -1,0 +1,124 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+}
+
+async function verifyAdminSession(
+  supabaseAdmin: any,
+  token: string
+): Promise<{ valid: boolean; admin_id?: string }> {
+  const encoder = new TextEncoder()
+  const tokenHashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(token))
+  const tokenHash = Array.from(new Uint8Array(tokenHashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+
+  const { data: session, error } = await supabaseAdmin
+    .from("admin_sessions")
+    .select("*")
+    .eq("token_hash", tokenHash)
+    .gt("expires_at", new Date().toISOString())
+    .single()
+
+  if (error || !session) {
+    return { valid: false }
+  }
+
+  return { valid: true, admin_id: session.admin_id }
+}
+
+function generateCode(): string {
+  // Generate a 6-digit numeric code
+  const bytes = new Uint8Array(3)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes)
+    .map((b) => (b % 10).toString())
+    .join("")
+    .substring(0, 6)
+}
+
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders })
+  }
+
+  try {
+    // Verify admin session
+    const authHeader = req.headers.get("Authorization")
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "احراز هویت مدیر لازم است" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    const token = authHeader.replace("Bearer ", "")
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    )
+
+    const session = await verifyAdminSession(supabaseAdmin, token)
+    if (!session.valid) {
+      return new Response(
+        JSON.stringify({ error: "جلسه مدیر منقضی شده. لطفاً دوباره وارد شوید" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    // Generate a unique code
+    let code = generateCode()
+    let attempts = 0
+    while (attempts < 10) {
+      const { data: existing } = await supabaseAdmin
+        .from("entry_codes")
+        .select("id")
+        .eq("code", code)
+        .single()
+
+      if (!existing) break
+      code = generateCode()
+      attempts++
+    }
+
+    // Create the entry code with 5-minute expiry
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
+
+    const { data, error } = await supabaseAdmin
+      .from("entry_codes")
+      .insert({
+        code: code,
+        is_active: true,
+        activated_at: new Date().toISOString(),
+        expires_at: expiresAt,
+        created_by: session.admin_id,
+      })
+      .select("id, code, expires_at")
+      .single()
+
+    if (error) {
+      return new Response(
+        JSON.stringify({ error: "خطا در ایجاد کد ورود" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    return new Response(
+      JSON.stringify({
+        message: "کد ورود با موفقیت فعال شد",
+        code: data.code,
+        expires_at: data.expires_at,
+        id: data.id,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    )
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: "خطای داخلی سرور" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    )
+  }
+})

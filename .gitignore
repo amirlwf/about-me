@@ -1,4 +1,4 @@
-*.mimo
+i*.mimo
 *.env
 .env
 env
@@ -11,3 +11,4 @@ test.html
 test_bot.gs
 .sheet
 sheet
+DEPLO*

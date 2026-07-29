@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VLESS - پنل مدیریت</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    // Prevent FOUC - set theme before paint
+    (function() {
+      var theme = localStorage.getItem('vless-theme');
+      if (theme) document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <style>
+    .admin-login-wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- ============ ADMIN LOGIN ============ -->
+  <div id="adminLoginView" class="admin-login-wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">
+          <div class="logo-icon">⚡</div>
+          <span class="logo-text">مدیریت</span>
+        </div>
+        <p class="header-subtitle">ورود مدیر سیستم</p>
+      </div>
+      <div class="card">
+        <div id="loginAlert"></div>
+        <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
+          <div class="form-group">
+            <label class="form-label">نام کاربری</label>
+            <input type="text" class="form-input" id="adminUsername" placeholder="نام کاربری" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">رمز عبور</label>
+            <input type="password" class="form-input" id="adminPassword" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" id="adminLoginBtn">ورود →</button>
+        </form>
+      </div>
+      <div class="footer">
+        <p>ساخته شده توسط <a href="https://amirlwf.ir" target="_blank">amirlwf.ir</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ADMIN DASHBOARD ============ -->
+  <div id="adminDashboardView" style="display:none;">
+    <!-- Navbar -->
+    <nav class="navbar">
+      <a href="admin.html" class="navbar-brand">
+        <span class="icon">⚡</span>
+        <span>مدیریت</span>
+      </a>
+      <div class="navbar-actions">
+        <span class="navbar-user" id="adminDisplay"></span>
+        <button class="navbar-logout" onclick="handleAdminLogout()">خروج</button>
+      </div>
+    </nav>
+
+    <div class="admin-content">
+      <!-- Alert Container -->
+      <div id="adminAlert"></div>
+
+      <!-- Stats -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-value" id="statUsers">0</div>
+          <div class="stat-label">کل کاربران</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statConfigs">0</div>
+          <div class="stat-label">کل کانفیگ‌ها</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statAssigned">0</div>
+          <div class="stat-label">تخصیص یافته</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statAvailable">0</div>
+          <div class="stat-label">موجود در انبار</div>
+        </div>
+      </div>
+
+      <!-- Admin Tabs -->
+      <div class="tabs" style="max-width: 600px; margin: 0 auto 24px;">
+        <button class="tab-btn active" data-tab="users" onclick="switchAdminTab('users')">کاربران</button>
+        <button class="tab-btn" data-tab="configs" onclick="switchAdminTab('configs')">کانفیگ‌ها</button>
+        <button class="tab-btn" data-tab="codes" onclick="switchAdminTab('codes')">کدها</button>
+        <button class="tab-btn" data-tab="videos" onclick="switchAdminTab('videos')">ویدیوها</button>
+      </div>
+
+      <!-- ===== USERS TAB ===== -->
+      <div class="tab-content active" id="tab-users">
+        <div class="card card-full">
+          <div class="card-title">
+            <span class="icon">→</span>
+            <span>لیست کاربران</span>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>ایمیل</th>
+                  <th>نام</th>
+                  <th>کانفیگ</th>
+                  <th>تاریخ عضویت</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody">
+                <tr><td colspan="5" style="text-align:center; color:var(--gray-600);">در حال بارگذاری...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CONFIGS TAB ===== -->
+      <div class="tab-content" id="tab-configs">
+        <div class="card card-full">
+          <div class="card-title">
+            <span class="icon">→</span>
+            <span>افزودن کانفیگ به انبار</span>
+          </div>
+          <p style="color: var(--gray-500); margin-bottom: 16px; font-size: 0.9rem;">
+            کانفیگ‌های VLESS را به صورت خط به خط (هر خط یک URI) وارد کنید:
+          </p>
+          <div id="configsAlert"></div>
+          <div class="form-group">
+            <label class="form-label">پیشوند نام (اختیاری)</label>
+            <input type="text" class="form-input" id="configPrefix" placeholder="مثلاً: سرور آلمان" style="direction:rtl; text-align:right;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">لیست کانفیگ‌ها (هر خط یک URI)</label>
+            <textarea class="form-textarea" id="configsTextarea" placeholder="vless://uuid@host:port?..." rows="8"></textarea>
+            <p class="form-hint">فقط خطوطی که با vless:// شروع شوند اضافه خواهند شد</p>
+          </div>
+          <button class="btn btn-primary" id="addConfigsBtn" onclick="handleAddConfigs()">
+            اضافه کردن کانفیگ‌ها →
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== CODES TAB ===== -->
+      <div class="tab-content" id="tab-codes">
+        <div class="card card-wide">
+          <div class="card-title">
+            <span class="icon">→</span>
+            <span>فعال‌سازی کد ورود</span>
+          </div>
+          <p style="color: var(--gray-500); margin-bottom: 16px; font-size: 0.9rem;">
+            یک کد ورود یکبار مصرف ایجاد کنید. کد به مدت ۵ دقیقه معتبر است.
+          </p>
+          <div id="codeAlert"></div>
+          <button class="btn btn-primary" id="activateCodeBtn" onclick="handleActivateCode()">
+            ایجاد کد جدید →
+          </button>
+          <div id="codeResult" style="display:none; margin-top: 24px;">
+            <div class="code-display">
+              <span class="code-value" id="generatedCode"></span>
+              <div>
+                <button class="btn btn-sm btn-secondary" onclick="copyCode()">کپی کد</button>
+                <div class="code-timer" id="codeTimer">اعتبار: ۵ دقیقه</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== VIDEOS TAB ===== -->
+      <div class="tab-content" id="tab-videos">
+        <div class="card card-full">
+          <div class="card-title">
+            <span class="icon">→</span>
+            <span>افزودن ویدیوی آموزشی</span>
+          </div>
+          <div id="videoAlert"></div>
+
+          <!-- Add Video Form -->
+          <div class="tabs" style="max-width: 300px; margin-bottom: 20px;">
+            <button class="tab-btn active" onclick="switchVideoTab('url')" id="videoTabUrl">لینک ویدیو</button>
+            <button class="tab-btn" onclick="switchVideoTab('file')" id="videoTabFile">فایل</button>
+          </div>
+
+          <!-- URL Mode -->
+          <div id="videoUrlMode">
+            <div class="form-group">
+              <label class="form-label">عنوان ویدیو</label>
+              <input type="text" class="form-input" id="videoTitle" placeholder="عنوان ویدیو" required style="direction:rtl; text-align:right;">
+            </div>
+            <div class="form-group">
+              <label class="form-label">آدرس ویدیو (YouTube/Vimeo/MP4)</label>
+              <input type="url" class="form-input" id="videoUrl" placeholder="https://youtube.com/watch?v=..." required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">توضیحات (اختیاری)</label>
+              <input type="text" class="form-input" id="videoDesc" placeholder="توضیحات کوتاه" style="direction:rtl; text-align:right;">
+            </div>
+            <div class="form-group">
+              <label class="form-label">اولویت نمایش</label>
+              <input type="number" class="form-input" id="videoSort" placeholder="0" value="0" min="0">
+            </div>
+            <button class="btn btn-primary" id="addVideoUrlBtn" onclick="handleAddVideoUrl()">
+              اضافه کردن ویدیو →
+            </button>
+          </div>
+
+          <!-- File Mode -->
+          <div id="videoFileMode" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">عنوان ویدیو</label>
+              <input type="text" class="form-input" id="fileVideoTitle" placeholder="عنوان ویدیو" required style="direction:rtl; text-align:right;">
+            </div>
+            <div class="form-group">
+              <label class="form-label">فایل ویدیو</label>
+              <input type="file" class="form-input" id="videoFileInput" accept="video/*" style="padding: 10px;">
+            </div>
+            <div class="form-group">
+              <label class="form-label">توضیحات (اختیاری)</label>
+              <input type="text" class="form-input" id="fileVideoDesc" placeholder="توضیحات کوتاه" style="direction:rtl; text-align:right;">
+            </div>
+            <button class="btn btn-primary" id="addVideoFileBtn" onclick="handleAddVideoFile()">
+              آپلود ویدیو →
+            </button>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Existing Videos -->
+          <div class="section-title">
+            <span class="icon">→</span>
+            <span>ویدیوهای موجود</span>
+          </div>
+          <div id="existingVideos">
+            <div class="empty-state">
+              <div class="icon">◇</div>
+              <p>هنوز ویدیویی اضافه نشده</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>ساخته شده توسط <a href="https://amirlwf.ir" target="_blank">amirlwf.ir</a></p>
+    </div>
+  </div>
+
+  <!-- Noise Overlay -->
+  <div class="noise-overlay"></div>
+
+  <!-- Theme Toggle -->
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="تغییر حالت نمایش">
+    <span class="icon-moon">🌙</span>
+    <span class="icon-sun">☀️</span>
+  </button>
+
+  <!-- Supabase JS CDN -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import {
+      apiCall,
+      showError,
+      showSuccess,
+      hideAlert,
+      showLoading,
+      hideLoading,
+      getAdminToken,
+      setAdminToken,
+      clearAdminToken,
+      getAdminUser,
+      isAdminLoggedIn,
+      escapeHtml,
+      formatDate,
+      toggleTheme,
+      getSupabase,
+    } from "./js/utils.js";
+
+    window.toggleTheme = toggleTheme;
+
+    // ============================================================
+    // Admin Login
+    // ============================================================
+    async function checkAdminSession() {
+      if (isAdminLoggedIn()) {
+        const admin = getAdminUser();
+        document.getElementById("adminDisplay").textContent = admin?.username || "مدیر";
+        document.getElementById("adminLoginView").style.display = "none";
+        document.getElementById("adminDashboardView").style.display = "block";
+        await loadDashboard();
+      }
+    }
+
+    window.handleAdminLogin = async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById("adminLoginBtn");
+      const alertContainer = document.getElementById("loginAlert");
+
+      const username = document.getElementById("adminUsername").value.trim();
+      const password = document.getElementById("adminPassword").value;
+
+      if (!username || !password) {
+        showError("لطفاً نام کاربری و رمز عبور را وارد کنید", alertContainer);
+        return;
+      }
+
+      showLoading(btn);
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+
+        const data = await apiCall(FUNCTION_URLS.adminLogin, {
+          method: "POST",
+          body: JSON.stringify({ username, password }),
+        });
+
+        setAdminToken(data.token, data.admin);
+        showSuccess("ورود موفق!", alertContainer);
+
+        setTimeout(() => {
+          document.getElementById("adminLoginView").style.display = "none";
+          document.getElementById("adminDashboardView").style.display = "block";
+          document.getElementById("adminDisplay").textContent = data.admin.username;
+          loadDashboard();
+        }, 500);
+      } catch (err) {
+        showError(err.message || "خطا در ورود", alertContainer);
+      } finally {
+        hideLoading(btn);
+      }
+    };
+
+    window.handleAdminLogout = function() {
+      clearAdminToken();
+      document.getElementById("adminLoginView").style.display = "flex";
+      document.getElementById("adminDashboardView").style.display = "none";
+    };
+
+    // ============================================================
+    // Tab Switching
+    // ============================================================
+    window.switchAdminTab = function(tab) {
+      document.querySelectorAll('.tabs .tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+      });
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === `tab-${tab}`);
+      });
+
+      // Load data for specific tabs
+      if (tab === "users") loadUsers();
+      if (tab === "videos") loadExistingVideos();
+    };
+
+    window.switchVideoTab = function(mode) {
+      document.getElementById("videoTabUrl").classList.toggle("active", mode === "url");
+      document.getElementById("videoTabFile").classList.toggle("active", mode === "file");
+      document.getElementById("videoUrlMode").style.display = mode === "url" ? "block" : "none";
+      document.getElementById("videoFileMode").style.display = mode === "file" ? "block" : "none";
+    };
+
+    // ============================================================
+    // Admin API call helper
+    // ============================================================
+    async function adminApiCall(url, options = {}) {
+      const token = getAdminToken();
+      if (!token) throw new Error("جلسه مدیر منقضی شده");
+
+      return apiCall(url, {
+        ...options,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...options.headers,
+        },
+      });
+    }
+
+    // ============================================================
+    // Load Dashboard
+    // ============================================================
+    async function loadDashboard() {
+      await loadUsers();
+    }
+
+    // ============================================================
+    // Users Management
+    // ============================================================
+    async function loadUsers() {
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        const data = await adminApiCall(FUNCTION_URLS.adminGetUsers);
+
+        // Update stats
+        document.getElementById("statUsers").textContent = data.stats.total_users;
+        document.getElementById("statConfigs").textContent = data.stats.total_configs;
+        document.getElementById("statAssigned").textContent = data.stats.assigned_configs;
+        document.getElementById("statAvailable").textContent = data.stats.unassigned_configs;
+
+        // Populate table
+        const tbody = document.getElementById("usersTableBody");
+        if (!data.users || data.users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">هنوز کاربری ثبت‌نام نکرده</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.users.map((user, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${escapeHtml(user.email)}</td>
+            <td>${escapeHtml(user.display_name || "-")}</td>
+            <td>
+              ${user.config
+                ? `<span class="badge badge-success">تخصیص یافته</span>`
+                : `<span class="badge badge-warning">بدون کانفیگ</span>`
+              }
+            </td>
+            <td>${formatDate(user.created_at)}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        showError("خطا در بارگذاری کاربران: " + err.message, document.getElementById("adminAlert"));
+      }
+    }
+
+    // ============================================================
+    // Add Configs
+    // ============================================================
+    window.handleAddConfigs = async function() {
+      const btn = document.getElementById("addConfigsBtn");
+      const alertContainer = document.getElementById("configsAlert");
+      const textarea = document.getElementById("configsTextarea");
+      const prefix = document.getElementById("configPrefix").value.trim();
+
+      const lines = textarea.value.split("\n").filter(l => l.trim().startsWith("vless://"));
+      if (lines.length === 0) {
+        showError("هیچ کانفیگ vless معتبری وارد نشده", alertContainer);
+        return;
+      }
+
+      showLoading(btn);
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+
+        const data = await adminApiCall(FUNCTION_URLS.adminAddConfigs, {
+          method: "POST",
+          body: JSON.stringify({
+            configs: lines,
+            remark_prefix: prefix,
+          }),
+        });
+
+        showSuccess(data.message, alertContainer);
+        textarea.value = "";
+        document.getElementById("configPrefix").value = "";
+      } catch (err) {
+        showError(err.message || "خطا در اضافه کردن کانفیگ‌ها", alertContainer);
+      } finally {
+        hideLoading(btn);
+      }
+    };
+
+    // ============================================================
+    // Activate Code
+    // ============================================================
+    window.handleActivateCode = async function() {
+      const btn = document.getElementById("activateCodeBtn");
+      const alertContainer = document.getElementById("codeAlert");
+
+      showLoading(btn);
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+
+        const data = await adminApiCall(FUNCTION_URLS.adminActivateCode, {
+          method: "POST",
+        });
+
+        showSuccess("کد با موفقیت ایجاد شد!", alertContainer);
+        document.getElementById("generatedCode").textContent = data.code;
+        document.getElementById("codeResult").style.display = "block";
+
+        // Start countdown
+        startCodeCountdown(new Date(data.expires_at));
+      } catch (err) {
+        showError(err.message || "خطا در ایجاد کد", alertContainer);
+      } finally {
+        hideLoading(btn);
+      }
+    };
+
+    let codeCountdownInterval = null;
+
+    function startCodeCountdown(expiresAt) {
+      if (codeCountdownInterval) clearInterval(codeCountdownInterval);
+
+      const timerEl = document.getElementById("codeTimer");
+      codeCountdownInterval = setInterval(() => {
+        const now = new Date();
+        const diff = new Date(expiresAt) - now;
+
+        if (diff <= 0) {
+          clearInterval(codeCountdownInterval);
+          timerEl.textContent = "⏰ کد منقضی شد";
+          timerEl.classList.add("urgent");
+          return;
+        }
+
+        const mins = Math.floor(diff / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        timerEl.textContent = `اعتبار: ${mins}:${secs.toString().padStart(2, "0")}`;
+        timerEl.classList.toggle("urgent", mins < 1);
+      }, 1000);
+    }
+
+    window.copyCode = async function() {
+      const code = document.getElementById("generatedCode").textContent;
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch {
+        const textarea = document.createElement("textarea");
+        textarea.value = code;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+    };
+
+    // ============================================================
+    // Videos Management
+    // ============================================================
+    window.handleAddVideoUrl = async function() {
+      const btn = document.getElementById("addVideoUrlBtn");
+      const alertContainer = document.getElementById("videoAlert");
+
+      const title = document.getElementById("videoTitle").value.trim();
+      const videoUrl = document.getElementById("videoUrl").value.trim();
+      const description = document.getElementById("videoDesc").value.trim();
+      const sortOrder = parseInt(document.getElementById("videoSort").value) || 0;
+
+      if (!title || !videoUrl) {
+        showError("عنوان و آدرس ویدیو الزامی هستند", alertContainer);
+        return;
+      }
+
+      showLoading(btn);
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+
+        await adminApiCall(FUNCTION_URLS.adminUploadVideo, {
+          method: "POST",
+          body: JSON.stringify({
+            title,
+            video_url: videoUrl,
+            description,
+            sort_order: sortOrder,
+          }),
+        });
+
+        showSuccess("ویدیو با موفقیت اضافه شد", alertContainer);
+        document.getElementById("videoTitle").value = "";
+        document.getElementById("videoUrl").value = "";
+        document.getElementById("videoDesc").value = "";
+        document.getElementById("videoSort").value = "0";
+        loadExistingVideos();
+      } catch (err) {
+        showError(err.message || "خطا در اضافه کردن ویدیو", alertContainer);
+      } finally {
+        hideLoading(btn);
+      }
+    };
+
+    window.handleAddVideoFile = async function() {
+      const btn = document.getElementById("addVideoFileBtn");
+      const alertContainer = document.getElementById("videoAlert");
+
+      const title = document.getElementById("fileVideoTitle").value.trim();
+      const file = document.getElementById("videoFileInput").files[0];
+      const description = document.getElementById("fileVideoDesc").value.trim();
+
+      if (!title || !file) {
+        showError("عنوان و فایل ویدیو الزامی هستند", alertContainer);
+        return;
+      }
+
+      showLoading(btn);
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("description", description);
+        formData.append("video", file);
+
+        const token = getAdminToken();
+        const response = await fetch(FUNCTION_URLS.adminUploadVideo, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+
+        showSuccess("ویدیو با موفقیت آپلود شد", alertContainer);
+        document.getElementById("fileVideoTitle").value = "";
+        document.getElementById("videoFileInput").value = "";
+        document.getElementById("fileVideoDesc").value = "";
+        loadExistingVideos();
+      } catch (err) {
+        showError(err.message || "خطا در آپلود ویدیو", alertContainer);
+      } finally {
+        hideLoading(btn);
+      }
+    };
+
+    async function loadExistingVideos() {
+      try {
+        const supabase = getSupabase();
+
+        const { data: videos, error } = await supabase
+          .from("videos")
+          .select("*")
+          .order("sort_order", { ascending: true });
+
+        const container = document.getElementById("existingVideos");
+
+        if (error || !videos || videos.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">◇</div>
+              <p>هنوز ویدیویی اضافه نشده</p>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = videos.map(video => `
+          <div class="config-item">
+            <div>
+              <strong>${escapeHtml(video.title)}</strong>
+              ${video.description ? `<br><small style="color:var(--gray-600)">${escapeHtml(video.description)}</small>` : ""}
+              <br><small style="color:var(--gray-600); direction:ltr; display:inline-block">${escapeHtml(video.video_url)}</small>
+            </div>
+            <span class="badge ${video.is_active ? 'badge-success' : 'badge-error'}">
+              ${video.is_active ? 'فعال' : 'غیرفعال'}
+            </span>
+          </div>
+        `).join("");
+      } catch (err) {
+        console.error("Error loading videos:", err);
+      }
+    }
+
+    // ============================================================
+    // Init
+    // ============================================================
+    checkAdminSession();
+  </script>
+</body>
+</html>
