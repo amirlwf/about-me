@@ -184,9 +184,14 @@
             <span>فعال‌سازی کد ورود</span>
           </div>
           <p style="color: var(--gray-500); margin-bottom: 16px; font-size: 0.9rem;">
-            یک کد ورود یکبار مصرف ایجاد کنید. کد به مدت ۵ دقیقه معتبر است.
+            یک کد ورود یکبار مصرف با مدت اعتبار دلخواه ایجاد کنید.
           </p>
           <div id="codeAlert"></div>
+          <div class="form-group" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <label class="form-label" style="margin-bottom:0;">مدت اعتبار:</label>
+            <input type="number" class="form-input" id="codeDuration" value="5" min="1" max="1440" style="width:100px; text-align:center; direction:ltr;">
+            <span style="color:var(--text-secondary); font-size:0.85rem;">دقیقه (حداکثر ۱۴۴۰ = ۲۴ ساعت)</span>
+          </div>
           <button class="btn btn-primary" id="activateCodeBtn" onclick="handleActivateCode()">
             ایجاد کد جدید →
           </button>
@@ -676,6 +681,12 @@
       const btn = document.getElementById("activateCodeBtn");
       const alertContainer = document.getElementById("codeAlert");
 
+      const duration = parseInt(document.getElementById("codeDuration").value) || 5;
+      if (duration < 1 || duration > 1440) {
+        showError("مدت اعتبار باید بین ۱ تا ۱۴۴۰ دقیقه باشد", alertContainer);
+        return;
+      }
+
       showLoading(btn);
       hideAlert(alertContainer);
 
@@ -684,6 +695,7 @@
 
         const data = await adminApiCall(FUNCTION_URLS.adminActivateCode, {
           method: "POST",
+          body: JSON.stringify({ duration_minutes: duration }),
         });
 
         showSuccess("کد با موفقیت ایجاد شد!", alertContainer);
