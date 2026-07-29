@@ -9,17 +9,29 @@ const corsHeaders = {
 function updateVlessRemarks(uri: string, newRemarks: string): string {
   try {
     const qIdx = uri.indexOf("?")
-    if (qIdx === -1) return uri + "?remarks=" + encodeURIComponent(newRemarks)
+    if (qIdx === -1) {
+      // No query string — append remarks param (no fragment to worry about)
+      return uri + "?remarks=" + encodeURIComponent(newRemarks)
+    }
 
     const base = uri.substring(0, qIdx)
     let qs = uri.substring(qIdx + 1)
     let frag = ""
     const hIdx = qs.indexOf("#")
-    if (hIdx !== -1) { frag = qs.substring(hIdx); qs = qs.substring(0, hIdx) }
+    if (hIdx !== -1) {
+      frag = qs.substring(hIdx)
+      qs = qs.substring(0, hIdx)
+    }
 
+    // Update both the ?remarks= query parameter AND the #fragment
     const params = new URLSearchParams(qs)
     params.set("remarks", newRemarks)
-    return base + "?" + params.toString() + frag
+
+    // Replace fragment with the new remark (many VLESS clients read #frag as name)
+    const encodedNew = encodeURIComponent(newRemarks)
+    const newFragment = frag ? "#" + encodedNew : ""
+
+    return base + "?" + params.toString() + newFragment
   } catch {
     return uri
   }

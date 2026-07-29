@@ -277,7 +277,7 @@
 
     // ============================================================
     // Personalize a VLESS URI with the user's name
-    // Adds or replaces the 'remarks' parameter
+    // Updates BOTH the ?remarks= parameter AND the #fragment
     // ============================================================
     function personalizeVlessUri(uri, userName) {
       const tag = `${userName}'s Config | amirlwf.ir`;
@@ -291,7 +291,7 @@
         const hIdx = qs.indexOf("#");
         if (hIdx !== -1) { frag = qs.substring(hIdx); qs = qs.substring(0, hIdx); }
 
-        // Simple param replacement without URLSearchParams (for broader compatibility)
+        // Add/replace ?remarks= query parameter
         const regex = new RegExp("([&?])remarks=[^&]*", "i");
         const encoded = encodeURIComponent(tag);
         if (regex.test(qs)) {
@@ -299,7 +299,11 @@
         } else {
           qs += (qs ? "&" : "") + `remarks=${encoded}`;
         }
-        return base + "?" + qs + frag;
+
+        // Replace #fragment with the user's name (many VLESS clients read this)
+        const newFragment = frag ? "#" + encoded : "";
+
+        return base + "?" + qs + newFragment;
       } catch {
         return uri;
       }
@@ -350,8 +354,8 @@
       const btn = document.getElementById("copyBtn");
       const container = document.getElementById("configText");
 
-      // If pack mode, copy all configs
-      if (window._packConfigs && window._packConfigs.length > 1) {
+      // If pack mode (>=1 configs), copy from the array (always has personalized URIs)
+      if (window._packConfigs && window._packConfigs.length >= 1) {
         const allText = window._packConfigs.map(c => c.vless_uri).join('\n');
         const success = await copyToClipboard(allText);
         if (success) {
@@ -365,7 +369,7 @@
         return;
       }
 
-      // Single config
+      // Fallback: read from container element
       const text = container.textContent;
       const success = await copyToClipboard(text);
       if (success) {
