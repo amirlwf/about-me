@@ -211,9 +211,16 @@
 
       const container = document.getElementById("configText");
 
+      // Get user's display name for personalization
+      const displayName = currentUser.user_metadata?.display_name || currentUser.email.split("@")[0];
+
       if (data.pack) {
-        // Pack display
-        const displayName = currentUser.user_metadata?.display_name || currentUser.email.split("@")[0];
+        // Pack display — personalize each config URI with the user's name
+        const personalizedConfigs = (data.configs || []).map(c => ({
+          ...c,
+          vless_uri: personalizeVlessUri(c.vless_uri, displayName),
+        }));
+
         container.innerHTML = `
           <div class="pack-header">
             <div class="pack-meta">
@@ -225,22 +232,28 @@
             </div>
           </div>
           <div class="pack-configs-list">
-            ${data.configs.map((cfg, idx) => `
+            ${personalizedConfigs.map((cfg, idx) => {
+              // Show a clean short version for display
+              const displayUri = cfg.vless_uri.length > 100
+                ? cfg.vless_uri.substring(0, 100) + '...'
+                : cfg.vless_uri;
+              return `
               <div class="pack-config-item">
                 <span class="config-index">${idx + 1}</span>
-                <code class="config-uri">${escapeHtml(cfg.vless_uri)}</code>
+                <code class="config-uri" title="${escapeHtml(cfg.vless_uri)}">${escapeHtml(displayUri)}</code>
                 <button class="copy-btn-small" onclick="copyConfigText('${idx}')">کپی</button>
-              </div>
-            `).join('')}
+              </div>`;
+            }).join('')}
           </div>
         `;
 
-        // Store configs for copy function
-        window._packConfigs = data.configs;
+        // Store PERSONALIZED configs for copy function, not the raw DB values
+        window._packConfigs = personalizedConfigs;
       } else if (data.configs && data.configs.length > 0) {
-        // Single config (backward compat)
-        container.innerHTML = `<pre class="config-text-single">${escapeHtml(data.configs[0].vless_uri)}</pre>`;
-        window._packConfigs = data.configs;
+        // Single config — personalize it too
+        const personalizedUri = personalizeVlessUri(data.configs[0].vless_uri, displayName);
+        container.innerHTML = `<pre class="config-text-single">${escapeHtml(personalizedUri)}</pre>`;
+        window._packConfigs = [{ vless_uri: personalizedUri }];
       }
     }
 
@@ -259,6 +272,36 @@
             btns[index].style.borderColor = '';
           }, 1500);
         }
+      }
+    }
+
+    // ============================================================
+    // Personalize a VLESS URI with the user's name
+    // Adds or replaces the 'remarks' parameter
+    // ============================================================
+    function personalizeVlessUri(uri, userName) {
+      const tag = `${userName}'s Config | amirlwf.ir`;
+      try {
+        const qIdx = uri.indexOf("?");
+        if (qIdx === -1) return uri + "?remarks=" + encodeURIComponent(tag);
+
+        const base = uri.substring(0, qIdx);
+        let qs = uri.substring(qIdx + 1);
+        let frag = "";
+        const hIdx = qs.indexOf("#");
+        if (hIdx !== -1) { frag = qs.substring(hIdx); qs = qs.substring(0, hIdx); }
+
+        // Simple param replacement without URLSearchParams (for broader compatibility)
+        const regex = new RegExp("([&?])remarks=[^&]*", "i");
+        const encoded = encodeURIComponent(tag);
+        if (regex.test(qs)) {
+          qs = qs.replace(regex, `$1remarks=${encoded}`);
+        } else {
+          qs += (qs ? "&" : "") + `remarks=${encoded}`;
+        }
+        return base + "?" + qs + frag;
+      } catch {
+        return uri;
       }
     }
 
