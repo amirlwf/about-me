@@ -73,6 +73,17 @@ serve(async (req: Request) => {
       )
     }
 
+    // Read custom duration from request body (default 5 minutes, max 1440 minutes = 24h)
+    let durationMinutes = 5
+    try {
+      const body = await req.json()
+      if (body.duration_minutes && typeof body.duration_minutes === 'number') {
+        durationMinutes = Math.max(1, Math.min(1440, Math.floor(body.duration_minutes)))
+      }
+    } catch {
+      // No body or invalid JSON — use default 5 minutes
+    }
+
     // Generate a unique code
     let code = generateCode()
     let attempts = 0
@@ -88,8 +99,8 @@ serve(async (req: Request) => {
       attempts++
     }
 
-    // Create the entry code with 5-minute expiry
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
+    // Create the entry code with custom duration
+    const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString()
 
     const { data, error } = await supabaseAdmin
       .from("entry_codes")
