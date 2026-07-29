@@ -116,12 +116,13 @@
                   <th>#</th>
                   <th>ایمیل</th>
                   <th>نام</th>
+                  <th>وضعیت</th>
                   <th>کانفیگ</th>
-                  <th>تاریخ عضویت</th>
+                  <th>عملیات</th>
                 </tr>
               </thead>
               <tbody id="usersTableBody">
-                <tr><td colspan="5" style="text-align:center; color:var(--gray-600);">در حال بارگذاری...</td></tr>
+                <tr><td colspan="6" style="text-align:center; color:var(--gray-600);">در حال بارگذاری...</td></tr>
               </tbody>
             </table>
           </div>
@@ -514,17 +515,30 @@
         }
 
         tbody.innerHTML = data.users.map((user, i) => `
-          <tr>
+          <tr class="${user.is_banned ? 'row-banned' : ''}">
             <td>${i + 1}</td>
             <td>${escapeHtml(user.email)}</td>
             <td>${escapeHtml(user.display_name || "-")}</td>
             <td>
+              ${user.is_banned
+                ? `<span class="badge badge-error">مسدود</span>`
+                : `<span class="badge badge-success">فعال</span>`
+              }
+            </td>
+            <td>
               ${user.config
-                ? `<span class="badge badge-success">تخصیص یافته</span>`
+                ? `<span class="badge badge-info">${escapeHtml(user.config.remark || 'تخصیص یافته')}</span>`
                 : `<span class="badge badge-warning">بدون کانفیگ</span>`
               }
             </td>
-            <td>${formatDate(user.created_at)}</td>
+            <td class="actions-cell">
+              <button class="btn btn-sm ${user.is_banned ? 'btn-warning' : 'btn-secondary'}" onclick="${user.is_banned ? `handleUnbanUser('${user.id}')` : `handleBanUser('${user.id}')`}" title="${user.is_banned ? 'لغو مسدودیت' : 'مسدود کردن'}">
+                ${user.is_banned ? '✓' : '🚫'}
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="handleDeleteUser('${user.id}', '${escapeHtml(user.email)}')" title="حذف کاربر">
+                🗑️
+              </button>
+            </td>
           </tr>
         `).join("");
       } catch (err) {
@@ -781,15 +795,20 @@
         }
 
         container.innerHTML = videos.map(video => `
-          <div class="config-item">
-            <div>
+          <div class="config-item video-admin-item">
+            <div class="video-admin-info">
               <strong>${escapeHtml(video.title)}</strong>
               ${video.description ? `<br><small style="color:var(--gray-600)">${escapeHtml(video.description)}</small>` : ""}
-              <br><small style="color:var(--gray-600); direction:ltr; display:inline-block">${escapeHtml(video.video_url)}</small>
+              <br><small style="color:var(--gray-500); direction:ltr; display:inline-block; font-size:0.7rem;">${escapeHtml(video.video_url)}</small>
             </div>
-            <span class="badge ${video.is_active ? 'badge-success' : 'badge-error'}">
-              ${video.is_active ? 'فعال' : 'غیرفعال'}
-            </span>
+            <div class="video-admin-actions">
+              <span class="badge ${video.is_active ? 'badge-success' : 'badge-error'}">
+                ${video.is_active ? 'فعال' : 'غیرفعال'}
+              </span>
+              <button class="btn btn-sm btn-danger" onclick="handleDeleteVideo('${video.id}', '${escapeHtml(video.title)}')" title="حذف ویدیو">
+                🗑️
+              </button>
+            </div>
           </div>
         `).join("");
       } catch (err) {
@@ -898,6 +917,79 @@
         showError(err.message || "خطا در تغییر رمز عبور کاربر", alertContainer);
       } finally {
         hideLoading(btn);
+      }
+    };
+
+    // ============================================================
+    // User Management: Ban/Delete
+    // ============================================================
+    window.handleBanUser = async function(userId) {
+      if (!confirm("آیا از مسدود کردن این کاربر اطمینان دارید؟")) return;
+      const alertContainer = document.getElementById("adminAlert");
+      hideAlert(alertContainer);
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        await adminApiCall(FUNCTION_URLS.adminBanUser, {
+          method: "POST",
+          body: JSON.stringify({ user_id: userId, ban: true }),
+        });
+        showSuccess("کاربر با موفقیت مسدود شد", alertContainer);
+        loadUsers();
+      } catch (err) {
+        showError(err.message || "خطا در مسدود کردن کاربر", alertContainer);
+      }
+    };
+
+    window.handleUnbanUser = async function(userId) {
+      if (!confirm("آیا از لغو مسدودیت این کاربر اطمینان دارید؟")) return;
+      const alertContainer = document.getElementById("adminAlert");
+      hideAlert(alertContainer);
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        await adminApiCall(FUNCTION_URLS.adminBanUser, {
+          method: "POST",
+          body: JSON.stringify({ user_id: userId, ban: false }),
+        });
+        showSuccess("مسدودیت کاربر لغو شد", alertContainer);
+        loadUsers();
+      } catch (err) {
+        showError(err.message || "خطا در لغو مسدودیت", alertContainer);
+      }
+    };
+
+    window.handleDeleteUser = async function(userId, email) {
+      const rawEmail = email.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+      if (!confirm(`آیا از حذف کامل کاربر ${rawEmail} اطمینان دارید؟\nاین عمل قابل بازگشت نیست!`)) return;
+      if (!confirm("⚠️ تأیید نهایی: کاربر و تمام داده‌های مرتبط حذف خواهند شد")) return;
+      const alertContainer = document.getElementById("adminAlert");
+      hideAlert(alertContainer);
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        await adminApiCall(FUNCTION_URLS.adminDeleteUser, {
+          method: "POST",
+          body: JSON.stringify({ user_id: userId }),
+        });
+        showSuccess("کاربر با موفقیت حذف شد", alertContainer);
+        loadUsers();
+      } catch (err) {
+        showError(err.message || "خطا در حذف کاربر", alertContainer);
+      }
+    };
+
+    window.handleDeleteVideo = async function(videoId, title) {
+      if (!confirm(`آیا از حذف ویدیو "${title}" اطمینان دارید؟`)) return;
+      const alertContainer = document.getElementById("videoAlert");
+      hideAlert(alertContainer);
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+        await adminApiCall(FUNCTION_URLS.adminDeleteVideo, {
+          method: "POST",
+          body: JSON.stringify({ video_id: videoId }),
+        });
+        showSuccess("ویدیو با موفقیت حذف شد", alertContainer);
+        loadExistingVideos();
+      } catch (err) {
+        showError(err.message || "خطا در حذف ویدیو", alertContainer);
       }
     };
 
