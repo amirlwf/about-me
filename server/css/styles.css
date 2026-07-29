@@ -870,6 +870,12 @@ body {
   border: 1px solid var(--border);
 }
 
+.badge-info {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
 /* ============================================================
    CODE ENTRY DISPLAY
    ============================================================ */

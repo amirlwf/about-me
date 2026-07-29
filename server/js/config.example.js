@@ -17,4 +17,7 @@ export const FUNCTION_URLS = {
   adminChangePassword: `${SUPABASE_URL}/functions/v1/admin-change-password`,
   adminResetUserPassword: `${SUPABASE_URL}/functions/v1/admin-reset-user-password`,
   adminGetVideos: `${SUPABASE_URL}/functions/v1/admin-get-videos`,
+  adminDeleteUser: `${SUPABASE_URL}/functions/v1/admin-delete-user`,
+  adminBanUser: `${SUPABASE_URL}/functions/v1/admin-ban-user`,
+  adminDeleteVideo: `${SUPABASE_URL}/functions/v1/admin-delete-video`,
 };
