@@ -115,7 +115,7 @@ serve(async (req: Request) => {
         .single()
 
       const displayName = profile?.display_name || "User"
-      personalizationTag = `${finalPackName} | سازنده: ${finalCreatorName} | کاربر: ${displayName} | Made by amirlwf.ir`
+      personalizationTag = `${displayName}'s Config | amirlwf.ir`
     }
 
     // Update existing configs or insert new ones
