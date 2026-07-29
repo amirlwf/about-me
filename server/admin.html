@@ -94,7 +94,7 @@
       </div>
 
       <!-- Admin Tabs -->
-      <div class="tabs" style="max-width: 700px; margin: 0 auto 24px;">
+      <div id="adminMainTabs" class="tabs" style="max-width: 700px; margin: 0 auto 24px;">
         <button class="tab-btn active" data-tab="users" onclick="switchAdminTab('users')">کاربران</button>
         <button class="tab-btn" data-tab="configs" onclick="switchAdminTab('configs')">کانفیگ‌ها</button>
         <button class="tab-btn" data-tab="codes" onclick="switchAdminTab('codes')">کدها</button>
@@ -282,6 +282,10 @@
               <label class="form-label">توضیحات (اختیاری)</label>
               <input type="text" class="form-input" id="fileVideoDesc" placeholder="توضیحات کوتاه" style="direction:rtl; text-align:right;">
             </div>
+            <div class="form-group">
+              <label class="form-label">اولویت نمایش</label>
+              <input type="number" class="form-input" id="fileVideoSort" placeholder="0" value="0" min="0">
+            </div>
             <button class="btn btn-primary" id="addVideoFileBtn" onclick="handleAddVideoFile()">
               آپلود ویدیو →
             </button>
@@ -408,6 +412,11 @@
     };
 
     window.handleAdminLogout = function() {
+      // Clear any running code countdown timer
+      if (codeCountdownInterval) {
+        clearInterval(codeCountdownInterval);
+        codeCountdownInterval = null;
+      }
       clearAdminToken();
       document.getElementById("adminLoginView").style.display = "flex";
       document.getElementById("adminDashboardView").style.display = "none";
@@ -417,7 +426,8 @@
     // Tab Switching
     // ============================================================
     window.switchAdminTab = function(tab) {
-      document.querySelectorAll('.tabs .tab-btn').forEach(btn => {
+      // Only toggle main admin tab buttons within #adminMainTabs (not video sub-tabs)
+      document.querySelectorAll('#adminMainTabs .tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tab);
       });
       document.querySelectorAll('.tab-content').forEach(content => {
@@ -691,6 +701,8 @@
         formData.append("title", title);
         formData.append("description", description);
         formData.append("video", file);
+        const fileSort = parseInt(document.getElementById("fileVideoSort").value) || 0;
+        formData.append("sort_order", String(fileSort));
 
         const token = getAdminToken();
         const response = await fetch(FUNCTION_URLS.adminUploadVideo, {
@@ -701,12 +713,12 @@
 
         const data = await response.json();
         if (!response.ok) {
-          // Handle auth errors the same way as adminApiCall
+          // Handle auth errors: show in the video alert, not login alert
           if (response.status === 401) {
             clearAdminToken();
             document.getElementById("adminLoginView").style.display = "flex";
             document.getElementById("adminDashboardView").style.display = "none";
-            showError("خطای ناشناخته", document.getElementById("loginAlert"));
+            showError("جلسه مدیر منقضی شده. لطفاً دوباره وارد شوید.", alertContainer);
             return;
           }
           throw new Error(data.error);
@@ -716,6 +728,7 @@
         document.getElementById("fileVideoTitle").value = "";
         document.getElementById("videoFileInput").value = "";
         document.getElementById("fileVideoDesc").value = "";
+        document.getElementById("fileVideoSort").value = "0";
         loadExistingVideos();
       } catch (err) {
         showError(err.message || "خطا در آپلود ویدیو", alertContainer);
@@ -726,16 +739,28 @@
 
     async function loadExistingVideos() {
       try {
-        const supabase = getSupabase();
+        const { FUNCTION_URLS: FNS } = await import("./js/config.js");
 
-        const { data: videos, error } = await supabase
-          .from("videos")
-          .select("*")
-          .order("sort_order", { ascending: true });
+        // Use admin API (service role) to see ALL videos including inactive ones.
+        // Falls back to anon client (active-only due to RLS) if the endpoint is not deployed.
+        let videos;
+        try {
+          const data = await adminApiCall(FNS.adminGetVideos);
+          videos = data.videos;
+        } catch {
+          // Fallback: anon client — only shows active videos due to RLS
+          const supabase = getSupabase();
+          const { data: anonVideos, error } = await supabase
+            .from("videos")
+            .select("*")
+            .order("sort_order", { ascending: true });
+          if (error) throw error;
+          videos = anonVideos;
+        }
 
         const container = document.getElementById("existingVideos");
 
-        if (error || !videos || videos.length === 0) {
+        if (!videos || videos.length === 0) {
           container.innerHTML = `
             <div class="empty-state">
               <div class="icon">◇</div>

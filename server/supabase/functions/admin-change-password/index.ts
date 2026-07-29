@@ -109,7 +109,7 @@ serve(async (req: Request) => {
       throw updateError
     }
 
-    // Invalidate all existing sessions
+    // Invalidate all existing sessions for this admin
     await supabaseAdmin
       .from("admin_sessions")
       .delete()

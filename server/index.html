@@ -114,7 +114,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label">کد ورود یکبار مصرف</label>
-                <input type="text" class="form-input" id="regCode" placeholder="۶ رقمی" required maxlength="6" pattern="[0-9]{6}" style="text-align:center; letter-spacing:4px; font-size:1.2rem;">
+                <input type="text" class="form-input" id="regCode" placeholder="کد ۶ رقمی" required maxlength="6" pattern="[0-9]{3,6}" style="text-align:center; letter-spacing:4px; font-size:1.2rem;">
                 <p class="form-hint">کد را از مدیر سیستم دریافت کنید (معتبر به مدت ۵ دقیقه)</p>
               </div>
               <button type="submit" class="btn btn-accent btn-block" id="registerBtn">
@@ -144,7 +144,7 @@
   <!-- Supabase JS CDN -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script type="module">
-    import { getSupabase, apiCall, showError, showSuccess, hideAlert, showLoading, hideLoading, onAuthStateChange, toggleTheme } from "./js/utils.js";
+    import { getSupabase, apiCall, showError, showSuccess, hideAlert, showLoading, hideLoading, toggleTheme } from "./js/utils.js";
 
     // Expose toggleTheme to window for onclick handler
     window.toggleTheme = toggleTheme;
@@ -264,8 +264,8 @@
         return;
       }
 
-      if (!/^\d{6}$/.test(code)) {
-        showError("کد ورود باید ۶ رقمی باشد", alertContainer);
+      if (!/^\d{3,6}$/.test(code)) {
+        showError("کد ورود باید بین ۳ تا ۶ رقم باشد", alertContainer);
         return;
       }
 
