@@ -89,20 +89,20 @@ serve(async (req: Request) => {
       }
     })
 
-    // Single query for stats — count all configs and unassigned configs in one go
-    const { data: allConfigs } = await supabaseAdmin
-      .from("vless_configs")
+    // Count PACKS instead of individual configs for stats
+    const { data: allPacks } = await supabaseAdmin
+      .from("config_packs")
       .select("assigned_to")
-    const totalConfigs = allConfigs?.length || 0
-    const unassignedConfigs = allConfigs?.filter(c => !c.assigned_to).length || 0
+    const totalPacks = allPacks?.length || 0
+    const unassignedPacks = allPacks?.filter(p => !p.assigned_to).length || 0
 
     return new Response(JSON.stringify({
       users: users,
       stats: {
         total_users: users.length,
-        total_configs: totalConfigs,
-        unassigned_configs: unassignedConfigs,
-        assigned_configs: totalConfigs - unassignedConfigs,
+        total_packs: totalPacks,
+        unassigned_packs: unassignedPacks,
+        assigned_packs: totalPacks - unassignedPacks,
       },
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } })
   } catch (error) {
