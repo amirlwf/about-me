@@ -94,11 +94,12 @@
       </div>
 
       <!-- Admin Tabs -->
-      <div class="tabs" style="max-width: 600px; margin: 0 auto 24px;">
+      <div class="tabs" style="max-width: 700px; margin: 0 auto 24px;">
         <button class="tab-btn active" data-tab="users" onclick="switchAdminTab('users')">کاربران</button>
         <button class="tab-btn" data-tab="configs" onclick="switchAdminTab('configs')">کانفیگ‌ها</button>
         <button class="tab-btn" data-tab="codes" onclick="switchAdminTab('codes')">کدها</button>
         <button class="tab-btn" data-tab="videos" onclick="switchAdminTab('videos')">ویدیوها</button>
+        <button class="tab-btn" data-tab="settings" onclick="switchAdminTab('settings')">تنظیمات</button>
       </div>
 
       <!-- ===== USERS TAB ===== -->
@@ -176,6 +177,56 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- ===== SETTINGS TAB ===== -->
+      <div class="tab-content" id="tab-settings">
+        <!-- Change Admin Password -->
+        <div class="card card-full" style="margin-bottom: 24px;">
+          <div class="card-title">
+            <span class="icon">🔒</span>
+            <span>تغییر رمز عبور مدیر</span>
+          </div>
+          <div id="changeAdminPassAlert"></div>
+          <div class="form-group">
+            <label class="form-label">رمز عبور فعلی</label>
+            <input type="password" class="form-input" id="currentAdminPassword" placeholder="رمز عبور فعلی" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">رمز عبور جدید</label>
+            <input type="password" class="form-input" id="newAdminPassword" placeholder="حداقل ۶ کاراکتر" required minlength="6">
+          </div>
+          <div class="form-group">
+            <label class="form-label">تکرار رمز عبور جدید</label>
+            <input type="password" class="form-input" id="confirmAdminPassword" placeholder="تکرار رمز عبور جدید" required>
+          </div>
+          <button class="btn btn-primary" id="changeAdminPassBtn" onclick="handleChangeAdminPassword()">
+            تغییر رمز عبور →
+          </button>
+        </div>
+
+        <!-- Reset User Password -->
+        <div class="card card-full">
+          <div class="card-title">
+            <span class="icon">👤</span>
+            <span>تغییر رمز عبور کاربر</span>
+          </div>
+          <p style="color: var(--gray-500); margin-bottom: 16px; font-size: 0.9rem;">
+            ایمیل کاربر مورد نظر را وارد کرده و رمز عبور جدید را تنظیم کنید.
+          </p>
+          <div id="resetUserPassAlert"></div>
+          <div class="form-group">
+            <label class="form-label">ایمیل کاربر</label>
+            <input type="email" class="form-input" id="resetUserEmail" placeholder="user@example.com" required style="direction:ltr; text-align:left;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">رمز عبور جدید</label>
+            <input type="password" class="form-input" id="resetUserPassword" placeholder="حداقل ۶ کاراکتر" required minlength="6">
+          </div>
+          <button class="btn btn-primary" id="resetUserPassBtn" onclick="handleResetUserPassword()">
+            تغییر رمز عبور کاربر →
+          </button>
         </div>
       </div>
 
@@ -674,6 +725,110 @@
         console.error("Error loading videos:", err);
       }
     }
+
+    // ============================================================
+    // Change Admin Password
+    // ============================================================
+    window.handleChangeAdminPassword = async function() {
+      const btn = document.getElementById("changeAdminPassBtn");
+      const alertContainer = document.getElementById("changeAdminPassAlert");
+      const currentPass = document.getElementById("currentAdminPassword").value;
+      const newPass = document.getElementById("newAdminPassword").value;
+      const confirmPass = document.getElementById("confirmAdminPassword").value;
+
+      if (!currentPass || !newPass || !confirmPass) {
+        showError("لطفاً تمام فیلدها را پر کنید", alertContainer);
+        return;
+      }
+
+      if (newPass !== confirmPass) {
+        showError("رمز عبور جدید و تکرار آن مطابقت ندارند", alertContainer);
+        return;
+      }
+
+      if (newPass.length < 6) {
+        showError("رمز عبور جدید باید حداقل ۶ کاراکتر باشد", alertContainer);
+        return;
+      }
+
+      showLoading(btn);
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+
+        const data = await adminApiCall(FUNCTION_URLS.adminChangePassword, {
+          method: "POST",
+          body: JSON.stringify({
+            current_password: currentPass,
+            new_password: newPass,
+          }),
+        });
+
+        showSuccess(data.message, alertContainer);
+        document.getElementById("currentAdminPassword").value = "";
+        document.getElementById("newAdminPassword").value = "";
+        document.getElementById("confirmAdminPassword").value = "";
+
+        // Session invalidated, force re-login
+        setTimeout(() => {
+          handleAdminLogout();
+        }, 2000);
+      } catch (err) {
+        showError(err.message || "خطا در تغییر رمز عبور", alertContainer);
+      } finally {
+        hideLoading(btn);
+      }
+    };
+
+    // ============================================================
+    // Reset User Password
+    // ============================================================
+    window.handleResetUserPassword = async function() {
+      const btn = document.getElementById("resetUserPassBtn");
+      const alertContainer = document.getElementById("resetUserPassAlert");
+      const email = document.getElementById("resetUserEmail").value.trim();
+      const newPassword = document.getElementById("resetUserPassword").value;
+
+      if (!email || !newPassword) {
+        showError("لطفاً ایمیل کاربر و رمز عبور جدید را وارد کنید", alertContainer);
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        showError("رمز عبور جدید باید حداقل ۶ کاراکتر باشد", alertContainer);
+        return;
+      }
+
+      if (!confirm(`آیا مطمئن هستید که می‌خواهید رمز عبور کاربر ${email} را تغییر دهید؟`)) {
+        return;
+      }
+
+      showLoading(btn);
+      hideAlert(alertContainer);
+
+      try {
+        const { FUNCTION_URLS } = await import("./js/config.js");
+
+        // First, we need to get the user_id from email
+        // We'll send email to the function and let it look up the user
+        const data = await adminApiCall(FUNCTION_URLS.adminResetUserPassword, {
+          method: "POST",
+          body: JSON.stringify({
+            email: email,
+            new_password: newPassword,
+          }),
+        });
+
+        showSuccess(data.message, alertContainer);
+        document.getElementById("resetUserEmail").value = "";
+        document.getElementById("resetUserPassword").value = "";
+      } catch (err) {
+        showError(err.message || "خطا در تغییر رمز عبور کاربر", alertContainer);
+      } finally {
+        hideLoading(btn);
+      }
+    };
 
     // ============================================================
     // Init
