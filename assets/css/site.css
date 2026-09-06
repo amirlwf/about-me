@@ -57,7 +57,9 @@ img { max-width: 100%; height: auto; }
 }
 .nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 62px; }
 .brand { font-family: 'Lalezar', 'Vazirmatn', Tahoma, cursive; font-size: 1.5rem; color: #fff; text-decoration: none;
-  background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  display: inline-flex; align-items: center; gap: 10px; }
+.brand-logo { width: 40px; height: 40px; border-radius: 10px; }
 .nav-links { display: flex; gap: 4px; list-style: none; }
 .nav-links a { color: var(--text-secondary); text-decoration: none; padding: 8px 14px; border-radius: 10px; font-size: 0.95rem; }
 .nav-links a:hover, .nav-links a[aria-current="page"] { color: #fff; background: var(--surface); }

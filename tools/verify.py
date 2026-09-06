@@ -15,7 +15,10 @@ PAGES = ["/", "/services/edit.html", "/services/web.html", "/services/pc.html",
          "/assets/js/site.js", "/assets/js/order.js", "/assets/js/admin.js",
          "/assets/js/supabase-config.js", "/assets/js/supabase.min.js",
          "/assets/fonts/fonts.css", "/assets/img/telegram.svg",
-         "/assets/img/whatsapp.svg", "/assets/img/rubika.svg", "/assets/img/phone.svg"]
+         "/assets/img/whatsapp.svg", "/assets/img/rubika.svg", "/assets/img/phone.svg",
+         "/assets/img/logo.svg", "/assets/img/logo-header.svg",
+         "/assets/img/icon-32.png", "/assets/img/favicon-16.png",
+         "/assets/img/icon-180.png", "/assets/img/og-cover.png"]
 FAILS = []
 
 def check(name, cond, detail=""):
