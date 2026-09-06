@@ -82,19 +82,30 @@
     renderChannels(getPath(data, 'business') || {});
   }
 
+  var CH_ICON = { phone: '/assets/img/phone.svg', telegram: '/assets/img/telegram.svg',
+    whatsapp: '/assets/img/whatsapp.svg', rubika: '/assets/img/rubika.svg' };
+
   function renderChannels(biz) {
     document.querySelectorAll('[data-channels]').forEach(function (box) {
       var en = biz.channels_enabled || {};
       var items = [];
-      if (en.phone !== false && biz.phone) items.push({ href: 'tel:+98' + String(biz.phone).replace(/^0/, ''), label: '📞 ' + biz.phone });
-      if (en.telegram !== false && biz.telegram && biz.telegram !== 'CHANGE_ME') items.push({ href: 'https://t.me/' + biz.telegram, label: '💬 تلگرام' });
-      if (en.whatsapp !== false && biz.whatsapp) items.push({ href: 'https://wa.me/98' + String(biz.whatsapp).replace(/^0/, ''), label: '🟢 واتساپ' });
-      if (en.rubika !== false && biz.rubika && biz.rubika !== 'CHANGE_ME') items.push({ href: biz.rubika.indexOf('http') === 0 ? biz.rubika : 'https://rubika.ir/' + biz.rubika, label: '🟣 روبیکا' });
+      if (en.phone !== false && biz.phone) items.push({ kind: 'phone', href: 'tel:+98' + String(biz.phone).replace(/^0/, ''), label: biz.phone });
+      if (en.telegram !== false && biz.telegram && biz.telegram !== 'CHANGE_ME') items.push({ kind: 'telegram', href: 'https://t.me/' + biz.telegram, label: 'تلگرام' });
+      if (en.whatsapp !== false && biz.whatsapp) items.push({ kind: 'whatsapp', href: 'https://wa.me/98' + String(biz.whatsapp).replace(/^0/, ''), label: 'واتساپ' });
+      if (en.rubika !== false && biz.rubika && biz.rubika !== 'CHANGE_ME') items.push({ kind: 'rubika', href: biz.rubika.indexOf('http') === 0 ? biz.rubika : 'https://rubika.ir/' + biz.rubika, label: 'روبیکا' });
       if (!items.length) return; // keep static fallback content
       box.innerHTML = '';
       items.forEach(function (it) {
         var a = document.createElement('a');
-        a.href = it.href; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = it.label;
+        a.href = it.href;
+        if (it.href.indexOf('tel:') !== 0) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+        var img = document.createElement('img');
+        img.src = CH_ICON[it.kind] || CH_ICON.phone;
+        img.alt = it.label;
+        img.loading = 'lazy';
+        img.className = it.kind === 'rubika' ? 'ch-icon-wide' : 'ch-icon';
+        a.appendChild(img);
+        a.appendChild(document.createTextNode(it.label));
         box.appendChild(a);
       });
     });

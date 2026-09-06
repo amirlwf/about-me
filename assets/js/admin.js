@@ -131,12 +131,62 @@
     });
   }
 
+  /* ---------- admin notifications: Notification API + beep ---------- */
+  var notifyOn = false;
+
+  function beep() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      var ctx = beep._ctx || (beep._ctx = new AC());
+      if (ctx.state === 'suspended') ctx.resume();
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime + 0.65);
+    } catch (e) { /* audio unavailable — toast still shows */ }
+  }
+
+  function notifyAdmin(title, body) {
+    if (!notifyOn) return;
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body: body, tag: 'new-order' });
+      }
+    } catch (e) { /* fall through to toast (already shown) */ }
+  }
+
+  document.getElementById('notify-btn').addEventListener('click', function () {
+    if (!('Notification' in window)) {
+      window.showToast('این مرورگر اعلان پشتیبانی نمی‌کند؛ صدا و پیام داخل پنل فعال است.');
+      notifyOn = true;
+      return;
+    }
+    Notification.requestPermission().then(function (perm) {
+      if (perm === 'granted') {
+        notifyOn = true;
+        document.getElementById('notify-btn').textContent = '🔔 اعلان فعال است';
+        window.showToast('اعلان سفارش جدید فعال شد ✅');
+      } else {
+        window.showToast('اجازه اعلان داده نشد؛ صدای هشدار فعال می‌ماند.');
+        notifyOn = true; // beep + toast still work
+      }
+    });
+  });
+
   function subscribeOrders() {
     client.channel('admin-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, function (payload) {
         if (payload.eventType === 'INSERT') {
           orders.unshift(payload.new);
-          window.showToast('🔔 سفارش جدید: ' + (payload.new.name || '') + ' — ' + (payload.new.service || ''));
+          var label = '🔔 سفارش جدید: ' + (payload.new.name || '') + ' — ' + (payload.new.service || '');
+          window.showToast(label);
+          notifyAdmin('سفارش جدید 🧾', (payload.new.name || '') + ' — ' + (payload.new.service || '') +
+            ' — ' + (payload.new.phone || ''));
+          beep();
         } else if (payload.eventType === 'UPDATE') {
           orders = orders.map(function (o) { return o.id === payload.new.id ? payload.new : o; });
         } else if (payload.eventType === 'DELETE') {

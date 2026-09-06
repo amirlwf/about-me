@@ -157,6 +157,8 @@ img { max-width: 100%; height: auto; }
   background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--turquoise); font-weight: 700; font-size: 0.9rem;
 }
 .contact-btns a:hover { border-color: var(--turquoise); background: rgba(64, 224, 208, 0.08); }
+.contact-btns a img.ch-icon { width: 22px; height: 22px; vertical-align: -5px; margin-left: 6px; }
+.contact-btns a img.ch-icon-wide { height: 22px; width: auto; max-width: 52px; vertical-align: -5px; margin-left: 6px; }
 
 /* ===== admin ===== */
 .admin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 16px 0; }
