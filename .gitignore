@@ -1,4 +1,4 @@
-i*.mimo
+*.mimo
 *.env
 .env
 env
@@ -12,6 +12,7 @@ test_bot.gs
 .sheet
 sheet
 DEPLO*
+*.md
 
 # local tooling (never deploy)
 tools/.lh/
