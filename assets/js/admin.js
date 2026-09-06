@@ -48,9 +48,9 @@
   });
 
   function enterPanel() {
-    loginSection.style.display = 'none';
-    panelSection.style.display = 'block';
-    logoutBtn.style.display = 'inline-block';
+    loginSection.classList.add('hidden');
+    panelSection.classList.remove('hidden');
+    logoutBtn.classList.remove('hidden');
     loadOrders();
     subscribeOrders();
     loadContent();
@@ -88,7 +88,7 @@
         '<td>' + esc(o.service) + ' / ' + esc(o.sub_service) + '</td>' +
         '<td>' + esc(o.description) + (o.admin_reply ? '<br><strong>پاسخ شما:</strong> ' + esc(o.admin_reply) : '') + '</td>' +
         '<td><span class="status-badge status-' + esc(o.status) + '">' + esc(STATUS_FA[o.status] || o.status) + '</span></td>' +
-        '<td><div class="admin-bar" style="margin:0">' +
+        '<td><div class="admin-bar m-0">' +
         '<button data-act="accept">✅ قبول</button>' +
         '<button data-act="done">✔️ انجام شد</button>' +
         '<button data-act="reply">💬 پاسخ</button>' +
@@ -145,7 +145,7 @@
         renderOrders();
       })
       .subscribe(function (status) {
-        if (status === 'SUBSCRIBED') liveInd.style.display = 'inline-block';
+        if (status === 'SUBSCRIBED') liveInd.classList.remove('hidden');
       });
   }
 

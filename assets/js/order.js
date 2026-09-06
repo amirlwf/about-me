@@ -148,7 +148,7 @@
     if (!box) return;
     var label = STATUS_FA[status] || status;
     box.innerHTML = 'وضعیت سفارش شما: <span class="status-badge status-' + status + '">' + label + '</span>';
-    box.style.display = 'block';
+    box.classList.remove('hidden');
   }
 
   function fetchStatus(id, token) {

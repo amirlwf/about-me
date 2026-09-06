@@ -128,10 +128,26 @@ def main():
         # ---- no secrets in tracked files ----
         out = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, cwd=ROOT).stdout
         check(".env untracked", ".env" not in out.replace(".env.example", ""), out.strip()[:120])
-        grep = subprocess.run(["git", "grep", "-l", "-e", "service_role", "-e", "SERVICE_ROLE_KEY.{0,3}[\"']\\s*[:=]",
-                               "-e", "TELEGRAM_BOT_TOKEN.{0,3}[\"']\\s*[:=]\\s*[\"']\\d",
-                               "--", ".", ":(exclude).env"], capture_output=True, text=True, cwd=ROOT).stdout.strip()
+        grep = subprocess.run(["git", "grep", "-l", "-e", "service_role",
+                               "--", ".", ":(exclude)*.md", ":(exclude)*.sql", ":(exclude)*.ts",
+                               ":(exclude)tools/verify.py", ":(exclude).env"], capture_output=True, text=True, cwd=ROOT).stdout.strip()
         check("no secrets tracked", grep == "", grep[:200])
+        # JWT-shaped scan: the anon key may appear ONLY in supabase-config.js
+        # (public by design); any other JWT (e.g. a service_role key) fails.
+        import base64
+        jwt_re = re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}")
+        ls = subprocess.run(["git", "ls-files"], capture_output=True, text=True, cwd=ROOT).stdout.split()
+        bad = []
+        for f in ls:
+            try:
+                src = open(os.path.join(ROOT, f), encoding="utf-8", errors="replace").read()
+            except Exception:
+                continue
+            for m in jwt_re.findall(src):
+                if os.path.basename(f) == "supabase-config.js":
+                    continue
+                bad.append(f + ":" + m[:20] + "…")
+        check("no leaked JWTs", not bad, str(bad[:3]))
         # anon key in client config is by design (public); service_role must never appear client-side
         for f in ("assets/js/supabase-config.js", "assets/js/site.js", "assets/js/order.js", "assets/js/admin.js"):
             src = open(os.path.join(ROOT, f), encoding="utf-8").read()

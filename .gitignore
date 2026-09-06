@@ -12,3 +12,7 @@ test_bot.gs
 .sheet
 sheet
 DEPLO*
+
+# local tooling (never deploy)
+tools/.lh/
+node_modules/

@@ -3,6 +3,11 @@
 (function () {
   'use strict';
 
+  // frame-busting (frame-ancestors can't be enforced via <meta>)
+  try {
+    if (window.top !== window.self) window.top.location = window.self.location;
+  } catch (e) { /* sandboxed frame — nothing to do */ }
+
   /* ---------- star canvas (decorative, guarded) ---------- */
   function initStars() {
     var canvas = document.getElementById('star-canvas');

@@ -164,6 +164,12 @@ img { max-width: 100%; height: auto; }
 .admin-table th { background: rgba(255, 255, 255, 0.06); }
 .admin-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 14px 0; }
 .pill { font-size: 0.8rem; padding: 2px 12px; border-radius: 14px; border: 1px solid var(--glass-border); }
+.hidden { display: none !important; }
+.btn-sm { padding: 6px 16px; }
+.m-0 { margin: 0 !important; }
+.scroll-x { overflow-x: auto; }
+.text-danger { color: var(--danger); }
+.w-auto { width: auto; }
 .live-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--emerald); margin-left: 6px; animation: blink 1.6s infinite; }
 @keyframes blink { 50% { opacity: 0.35; } }
 
