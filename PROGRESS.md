@@ -13,3 +13,5 @@
 - [2026-09-06] Milestone commit 658be12 on branch `redesign` (CNAME + Code.gs untouched)
 - [2026-09-06] NOTE: this machine cannot reach *.supabase.co (TCP timeout — DNS ok) so live Supabase/RLS/E2E verification + admin-user creation must be done by owner per README; Telegram absent → mock mode
 - [2026-09-06] CDP QA (Chrome 9333): all 6 pages 390px scrollWidth==innerWidth (no overflow), zero JS errors, DCL 43-234ms / load 46-234ms locally, 14 requests, 0 third-party; homepage ~190KB first paint; mobile+desktop screenshots visually verified (shot-m-home, shot-m-pc, shot-d-home)
+- [2026-09-06] Lighthouse 13 desktop (real runs): home 99/100/100/96, pc+web+edit 100/100/100/92 → fixed style-attr CSP + meta frame-ancestors → home re-audit 99/100/100/96; last console item is the Supabase 404 until schema.sql is applied (then 100). LCP 0.6-0.7s, CLS 0.01-0.05.
+- [2026-09-06] DONE except live-backend items (this machine can't reach *.supabase.co; no bot token): schema/seed/edge deploy, RLS live check, E2E order→realtime→telegram — all scripted/documented in README for the owner. Commits on `redesign`: 658be12, 769ea4b (node_modules stripped after), b510373 + cleanup.
