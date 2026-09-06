@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Me</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    
+    <!-- فونت‌های محلی (بدون درخواست خارجی) -->
+    <link rel="stylesheet" href="/assets/fonts/fonts.css">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://script.google.com https://script.googleusercontent.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+
+    <style>
+        /* ===== ریست و تنظیمات پایه ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --turquoise: #40E0D0;
+            --emerald: #50C878;
+            --matte-black: #121212;
+            --surface: rgba(255, 255, 255, 0.05);
+            --surface-hover: rgba(255, 255, 255, 0.08);
+            --text-primary: #f0f0f0;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --visitor-bubble: linear-gradient(135deg, #40E0D0, #50C878);
+            --owner-bubble: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background: var(--matte-black);
+            color: var(--text-primary);
+            font-family: 'Vazirmatn', Tahoma, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ===== کانواس ستاره‌ها ===== */
+        #star-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+
+        /* ===== مه کیهانی ===== */
+        .nebula {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse 600px 400px at 20% 30%, rgba(64, 224, 208, 0.06) 0%, transparent 70%),
+                radial-gradient(ellipse 500px 500px at 80% 70%, rgba(80, 200, 120, 0.05) 0%, transparent 70%);
+        }
+
+        /* ===== لایه اصلی ===== */
+        .app {
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        /* ===== هدر ===== */
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            width: 100%;
+        }
+
+        .header h1 {
+            font-family: 'Lalezar', 'Vazirmatn', cursive;
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #40E0D0, #50C878, #40E0D0);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
+            text-shadow: none;
+            filter: drop-shadow(0 0 12px rgba(64, 224, 208, 0.4)) drop-shadow(0 0 30px rgba(80, 200, 120, 0.2));
+            animation: title-glow 4s ease-in-out infinite;
+            letter-spacing: 1px;
+            line-height: 1.8;
+        }
+
+        @keyframes title-glow {
+            0%, 100% { filter: drop-shadow(0 0 12px rgba(64, 224, 208, 0.4)) drop-shadow(0 0 30px rgba(80, 200, 120, 0.2)); background-position: 0% 50%; }
+            50% { filter: drop-shadow(0 0 20px rgba(64, 224, 208, 0.6)) drop-shadow(0 0 50px rgba(80, 200, 120, 0.35)); background-position: 100% 50%; }
+        }
+
+        .header p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* ===== باکس چت (شیشه‌ای) ===== */
+        .chat-box {
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            overflow: hidden;
+            max-height: 50vh;
+        }
+
+        /* ===== بخش پیام‌ها ===== */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.1) transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        /* ===== حباب پیام ===== */
+        .message {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            animation: msg-in 0.3s ease;
+            word-wrap: break-word;
+        }
+
+        .message.visitor {
+            align-self: flex-start;
+            background: var(--visitor-bubble);
+            color: #fff;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message.owner {
+            align-self: flex-end;
+            background: var(--owner-bubble);
+            color: var(--text-primary);
+            border-bottom-left-radius: 6px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .message .time {
+            display: block;
+            font-size: 0.7rem;
+            opacity: 0.6;
+            margin-top: 4px;
+            text-align: left;
+        }
+
+        /* ===== تایپینگ ===== */
+        .typing {
+            align-self: flex-end;
+            background: var(--owner-bubble);
+            border: 1px solid var(--glass-border);
+            padding: 12px 18px;
+            border-radius: 18px;
+            border-bottom-left-radius: 6px;
+            display: none;
+        }
+
+        .typing.active { display: flex; gap: 5px; align-items: center; }
+
+        .typing span {
+            width: 8px;
+            height: 8px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite;
+        }
+
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+        /* ===== ورودی پیام ===== */
+        .chat-input {
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input input:focus {
+            border-color: var(--turquoise);
+        }
+
+        .chat-input input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .chat-input button {
+            background: var(--visitor-bubble);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 16px;
+            color: #fff;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.2s;
+            white-space: nowrap;
+        }
+
+        .chat-input button:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 20px rgba(64, 224, 208, 0.3);
+        }
+
+        .chat-input button:active {
+            transform: scale(0.97);
+        }
+
+        /* ===== دکمه تلگرام ===== */
+        .telegram-btn {
+            width: 100%;
+            margin-top: 16px;
+            padding: 16px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            color: var(--turquoise);
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .telegram-btn:hover {
+            background: rgba(64, 224, 208, 0.1);
+            border-color: var(--turquoise);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(64, 224, 208, 0.15);
+        }
+
+        /* ===== فوتر ===== */
+        .footer {
+            margin-top: 20px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-align: center;
+            font-family: Tahoma, monospace;
+            letter-spacing: 1px;
+        }
+
+        /* ===== انیمیشن‌ها ===== */
+        @keyframes msg-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+
+        /* ===== ریسپانسیو ===== */
+        @media (max-width: 560px) {
+            .app { padding: 12px; }
+            .chat-box { max-height: 55vh; border-radius: 14px; }
+            .header h1 { font-size: 1.7rem; }
+            .message { max-width: 85%; font-size: 0.85rem; padding: 8px 12px; }
+            .chat-input { padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ستاره‌ها -->
+    <canvas id="star-canvas"></canvas>
+    <!-- مه کیهانی -->
+    <div class="nebula"></div>
+
+    <!-- اپلیکیشن اصلی -->
+    <div class="app">
+        <div class="header">
+            <h1>فعلا خبری نیست جیگر</h1>
+            <p>برای ارتباط با من از چت زیر استفاده کنید</p>
+        </div>
+
+        <div class="chat-box">
+            <div class="chat-messages" id="chat-messages">
+                <!-- پیام‌ها اینجا رندر می‌شن -->
+            </div>
+            <div class="typing" id="typing">
+                <span></span><span></span><span></span>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="msg-input" placeholder="پیامتو بنویس..." maxlength="4000">
+                <button id="send-btn">ارسال</button>
+            </div>
+        </div>
+
+        <a href="https://t.me/arlwf" class="telegram-btn" target="_blank" rel="noopener noreferrer">
+            💬 تلگرامم پیام بده
+        </a>
+
+        <div class="footer">TO MY DEAR PARIYA ❤️</div>
+    </div>
+
+    <script>
+        // ===== تنظیمات =====
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3eBZDUae7iSHHuhrFVIPqeVcSo1r-sPwqtNfAHO2h4suwRH-rw-tEEa2xt5PFjpA/exec';
+        const COOKIE_NAME = 'cosmic_chat_visitor';
+        const COOKIE_HISTORY = 'cosmic_chat_history';
+        const POLL_INTERVAL = 3000;
+
+        // ===== مدیریت visitorId =====
+        function getVisitorId() {
+            const match = document.cookie.match(new RegExp(COOKIE_NAME + '=([^;]+)'));
+            if (match) return match[1];
+
+            const id = Math.random().toString(16).substring(2, 10);
+            const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString();
+            document.cookie = `${COOKIE_NAME}=${id}; expires=${expires}; path=/; SameSite=Lax`;
+            return id;
+        }
+
+        const visitorId = getVisitorId();
+
+        // ===== مدیریت تاریخچه چت (کوکی) =====
+        function loadHistory() {
+            try {
+                const match = document.cookie.match(new RegExp(COOKIE_HISTORY + '=([^;]+)'));
+                if (match) return JSON.parse(decodeURIComponent(match[1]));
+            } catch (e) {}
+            return [];
+        }
+
+        function saveHistory(messages) {
+            const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString();
+            const data = encodeURIComponent(JSON.stringify(messages.slice(-100)));
+            document.cookie = `${COOKIE_HISTORY}=${data}; expires=${expires}; path=/; SameSite=Lax`;
+        }
+
+        // ===== رندر پیام‌ها =====
+        let chatHistory = loadHistory();
+        const messagesEl = document.getElementById('chat-messages');
+
+        function renderMessages() {
+            messagesEl.innerHTML = chatHistory.map(msg => `
+                <div class="message ${msg.sender}">
+                    ${escapeHtml(msg.text)}
+                    <span class="time">${formatTime(msg.time)}</span>
+                </div>
+            `).join('');
+            autoScroll();
+        }
+
+        function addMessage(sender, text) {
+            const msg = { sender, text, time: new Date().toISOString() };
+            chatHistory.push(msg);
+            saveHistory(chatHistory);
+
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            div.innerHTML = `${escapeHtml(text)}<span class="time">${formatTime(msg.time)}</span>`;
+            messagesEl.appendChild(div);
+            autoScroll();
+        }
+
+        function autoScroll() {
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function formatTime(iso) {
+            try {
+                const d = new Date(iso);
+                return d.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+            } catch (e) { return ''; }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ===== ارسال پیام =====
+        const inputEl = document.getElementById('msg-input');
+        const sendBtn = document.getElementById('send-btn');
+        const typingEl = document.getElementById('typing');
+
+        async function sendMessage() {
+            const text = inputEl.value.trim();
+            if (!text) return;
+
+            inputEl.value = '';
+            addMessage('visitor', text);
+
+            // نمایش تایپینگ
+            typingEl.classList.add('active');
+
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ visitorId, message: text })
+                });
+            } catch (e) {
+                console.error('Send error:', e);
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        inputEl.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // ===== پولینگ - بررسی پاسخ مالک =====
+        async function pollReplies() {
+            try {
+                const res = await fetch(`${SCRIPT_URL}?visitorId=${visitorId}`);
+                const data = await res.json();
+
+                if (data.success && data.messages) {
+                    const ownerMessages = data.messages.filter(m => m.sender === 'owner');
+                    const knownTimes = new Set(
+                        chatHistory.filter(m => m.sender === 'owner').map(m => m.time)
+                    );
+
+                    let hasNew = false;
+                    for (const msg of ownerMessages) {
+                        if (!knownTimes.has(msg.time)) {
+                            chatHistory.push({ sender: 'owner', text: msg.text, time: msg.time });
+                            hasNew = true;
+                        }
+                    }
+
+                    if (hasNew) {
+                        saveHistory(chatHistory);
+                        renderMessages();
+                        typingEl.classList.remove('active');
+                    }
+                }
+            } catch (e) {
+                // سکوت - پولینگ بعدی تلاش می‌کنه
+            }
+        }
+
+        // شروع پولینگ
+        setInterval(pollReplies, POLL_INTERVAL);
+
+        // ===== انیمیشن ستاره =====
+        (function initStars() {
+            const canvas = document.getElementById('star-canvas');
+            const ctx = canvas.getContext('2d');
+            let w, h, stars = [], shootingStars = [];
+
+            function resize() {
+                w = canvas.width = window.innerWidth;
+                h = canvas.height = window.innerHeight;
+            }
+
+            // ساخت ستاره‌ها
+            function createStars() {
+                stars = [];
+                const count = Math.floor((w * h) / 6000);
+                for (let i = 0; i < count; i++) {
+                    stars.push({
+                        x: Math.random() * w,
+                        y: Math.random() * h,
+                        r: Math.random() * 1.5 + 0.3,
+                        alpha: Math.random() * 0.6 + 0.2,
+                        twinkleSpeed: Math.random() * 0.01 + 0.003,
+                        twinkleOffset: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+
+            // شهاب‌سنگ
+            function spawnShootingStar() {
+                if (shootingStars.length < 2 && Math.random() < 0.02) {
+                    shootingStars.push({
+                        x: Math.random() * w,
+                        y: Math.random() * h * 0.5,
+                        len: Math.random() * 100 + 50,
+                        speed: Math.random() * 8 + 6,
+                        alpha: 1,
+                        angle: Math.PI / 4 + (Math.random() - 0.5) * 0.3
+                    });
+                }
+            }
+
+            let frame = 0;
+            function draw() {
+                ctx.clearRect(0, 0, w, h);
+
+                // ستاره‌ها
+                for (const s of stars) {
+                    const twinkle = Math.sin(frame * s.twinkleSpeed + s.twinkleOffset) * 0.3 + 0.7;
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${s.alpha * twinkle})`;
+                    ctx.fill();
+                }
+
+                // شهاب‌سنگ‌ها
+                spawnShootingStar();
+                for (let i = shootingStars.length - 1; i >= 0; i--) {
+                    const ss = shootingStars[i];
+                    ss.x += Math.cos(ss.angle) * ss.speed;
+                    ss.y += Math.sin(ss.angle) * ss.speed;
+                    ss.alpha -= 0.015;
+
+                    if (ss.alpha <= 0 || ss.x > w || ss.y > h) {
+                        shootingStars.splice(i, 1);
+                        continue;
+                    }
+
+                    const tailX = ss.x - Math.cos(ss.angle) * ss.len;
+                    const tailY = ss.y - Math.sin(ss.angle) * ss.len;
+                    const grad = ctx.createLinearGradient(tailX, tailY, ss.x, ss.y);
+                    grad.addColorStop(0, `rgba(255, 255, 255, 0)`);
+                    grad.addColorStop(1, `rgba(255, 255, 255, ${ss.alpha})`);
+
+                    ctx.beginPath();
+                    ctx.moveTo(tailX, tailY);
+                    ctx.lineTo(ss.x, ss.y);
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
+                frame++;
+                requestAnimationFrame(draw);
+            }
+
+            resize();
+            createStars();
+            window.addEventListener('resize', () => { resize(); createStars(); });
+            draw();
+        })();
+
+        // ===== شروع =====
+        renderMessages();
+        pollReplies();
+    </script>
+</body>
+</html>

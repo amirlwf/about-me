@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پنل مدیریت | امیر</title>
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://ysjdodvtmihaxyioknuo.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
+<link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+<canvas id="star-canvas"></canvas>
+<div class="nebula"></div>
+
+<header class="site-header">
+<div class="wrap nav">
+<a class="brand" href="/">امیر 🛠️</a>
+<div class="admin-bar" style="margin:0">
+<span id="live-ind" class="pill" style="display:none"><span class="live-dot"></span>متصل زنده</span>
+<button class="btn btn-ghost" id="logout-btn" style="display:none;padding:6px 16px">خروج</button>
+</div>
+</div>
+</header>
+
+<main class="wrap">
+<section class="section" id="login-section">
+<h1>ورود مدیر</h1>
+<div class="form-card">
+<form id="login-form">
+<div class="field"><label for="l-email">ایمیل</label><input id="l-email" type="email" dir="ltr" autocomplete="username" required></div>
+<div class="field"><label for="l-pass">رمز عبور</label><input id="l-pass" type="password" dir="ltr" autocomplete="current-password" required></div>
+<button class="btn btn-primary" type="submit">ورود</button>
+<p class="hint" id="login-err" style="color:var(--danger)"></p>
+</form>
+</div>
+</section>
+
+<section class="section" id="panel-section" style="display:none">
+<h1>سفارش‌ها <span class="pill"><span class="live-dot"></span>بدون رفرش</span></h1>
+<div class="admin-bar">
+<label>فیلتر وضعیت:
+<select id="status-filter">
+<option value="">همه</option>
+<option value="new">جدید</option>
+<option value="in_progress">در حال انجام</option>
+<option value="done">انجام‌شده</option>
+</select>
+</label>
+<button class="btn btn-ghost" id="refresh-btn">به‌روزرسانی</button>
+</div>
+<div style="overflow-x:auto">
+<table class="admin-table" id="orders-table">
+<thead><tr><th>زمان</th><th>نام</th><th>موبایل</th><th>خدمت</th><th>شرح</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+<tbody id="orders-body"><tr><td colspan="7">در حال بارگذاری…</td></tr></tbody>
+</table>
+</div>
+
+<h2>ویرایش محتوای سایت</h2>
+<p class="hint">مقادیر اینجا در جدول <code dir="ltr">site_content</code> ذخیره و ظرف چند ثانیه روی سایت اعمال می‌شود (بدون نیاز به انتشار مجدد).</p>
+<div class="form-card">
+<div class="field"><label for="c-hours">ساعات کاری</label><input id="c-hours" type="text"></div>
+<div class="field"><label for="c-city">شهر</label><input id="c-city" type="text"></div>
+<button class="btn btn-primary" id="save-content-btn">ذخیره محتوا</button>
+</div>
+
+<h2>کانال‌های ارتباطی</h2>
+<p class="hint">شماره‌ها و آیدی‌ها اینجا ویرایش می‌شود و به‌صورت دکمه در هدر/فوتر سایت نمایش داده می‌شود. هر مورد را می‌توان غیرفعال کرد.</p>
+<div class="form-card">
+<div class="field"><label for="ch-phone">شماره موبایل (مثل 09123456789)</label><input id="ch-phone" type="tel" dir="ltr"></div>
+<div class="field"><label><input id="ch-phone-en" type="checkbox" style="width:auto"> نمایش دکمه تماس</label></div>
+<div class="field"><label for="ch-telegram">آیدی تلگرام (بدون @)</label><input id="ch-telegram" type="text" dir="ltr"></div>
+<div class="field"><label><input id="ch-telegram-en" type="checkbox" style="width:auto"> نمایش دکمه تلگرام</label></div>
+<div class="field"><label for="ch-whatsapp">شماره واتساپ (مثل 09123456789)</label><input id="ch-whatsapp" type="tel" dir="ltr"></div>
+<div class="field"><label><input id="ch-whatsapp-en" type="checkbox" style="width:auto"> نمایش دکمه واتساپ</label></div>
+<div class="field"><label for="ch-rubika">آیدی/لینک روبیکا</label><input id="ch-rubika" type="text" dir="ltr"></div>
+<div class="field"><label><input id="ch-rubika-en" type="checkbox" style="width:auto"> نمایش دکمه روبیکا</label></div>
+<button class="btn btn-primary" id="save-channels-btn">ذخیره کانال‌ها</button>
+</div>
+</section>
+</main>
+
+<div id="toast" role="status"></div>
+<script src="/assets/js/supabase-config.js"></script>
+<script src="/assets/js/supabase.min.js"></script>
+<script src="/assets/js/site.js"></script>
+<script src="/assets/js/admin.js"></script>
+</body>
+</html>
