@@ -8,7 +8,9 @@
     
     <!-- فونت‌های محلی (بدون درخواست خارجی) -->
     <link rel="stylesheet" href="/assets/fonts/fonts.css">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://script.google.com https://script.googleusercontent.com; base-uri 'self'; form-action 'self'">
+    <!-- SITE_CONFIG (Supabase URL + anon key) — tiny, blocking on purpose so chat logic below always sees it -->
+    <script src="/assets/js/supabase-config.js"></script>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://ysjdodvtmihaxyioknuo.supabase.co wss://ysjdodvtmihaxyioknuo.supabase.co; base-uri 'self'; form-action 'self'">
 
     <style>
         /* ===== ریست و تنظیمات پایه ===== */
@@ -150,6 +152,8 @@
             color: #fff;
             border-bottom-right-radius: 6px;
         }
+        /* پیام در حال ارسال (optimistic): کم‌رنگ تا تأیید سرور */
+        .message.visitor.pending { opacity: 0.6; }
 
         .message.owner {
             align-self: flex-end;
@@ -335,15 +339,17 @@
             💬 تلگرامم پیام بده
         </a>
 
-        <div class="footer">TO MY DEAR PARIYA ❤️</div>
+        <div class="footer">CREATED WITH ❤️</div>
     </div>
 
     <script>
-        // ===== تنظیمات =====
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3eBZDUae7iSHHuhrFVIPqeVcSo1r-sPwqtNfAHO2h4suwRH-rw-tEEa2xt5PFjpA/exec';
+        // ===== تنظیمات (Supabase Realtime؛ سرور مرجع حقیقت، DB تاریخچه آفلاین) =====
+        const SITE = window.SITE_CONFIG || {};
+        const SUPA_URL = SITE.SUPABASE_URL || '';
+        const SUPA_ANON = SITE.SUPABASE_ANON_KEY || '';
         const COOKIE_NAME = 'cosmic_chat_visitor';
         const COOKIE_HISTORY = 'cosmic_chat_history';
-        const POLL_INTERVAL = 3000;
+        const SYNC_INTERVAL = 15000; // تور امنیت پشت Realtime — فقط عقب‌ماندگی را می‌گیرد
 
         // ===== مدیریت visitorId =====
         function getVisitorId() {
@@ -369,7 +375,7 @@
 
         function saveHistory(messages) {
             const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString();
-            const data = encodeURIComponent(JSON.stringify(messages.slice(-100)));
+            const data = encodeURIComponent(JSON.stringify(messages.slice(-200)));
             document.cookie = `${COOKIE_HISTORY}=${data}; expires=${expires}; path=/; SameSite=Lax`;
         }
 
@@ -387,8 +393,9 @@
             autoScroll();
         }
 
-        function addMessage(sender, text) {
-            const msg = { sender, text, time: new Date().toISOString() };
+        function addMessage(sender, text, timeIso, serverId) {
+            const msg = { sender, text, time: timeIso || new Date().toISOString() };
+            if (serverId) msg.id = serverId;
             chatHistory.push(msg);
             saveHistory(chatHistory);
 
@@ -416,30 +423,69 @@
             return div.innerHTML;
         }
 
+        // ===== لایه داده: ارسال از chat-send، خواندن مستقیم (RLS)، دریافت لحظه‌ای Realtime =====
+        function apiHeaders(extra) {
+            const h = Object.assign({ apikey: SUPA_ANON, 'Content-Type': 'application/json' }, extra || {});
+            return h;
+        }
+        // آخرین id سروری که دیده‌ایم — سینک‌ها فقط جدیدتر از این را می‌گیرند
+        let lastSeenId = chatHistory.reduce((mx, m) => Math.max(mx, m.id || 0), 0);
+
+        // کش now: id پیام خودمان (optimistic) -> المنت DOM برای جایگزینی بی‌درز
+        const pendingEls = new Map();
+
+        // دریافت یک پیام مالک (از Realtime یا سینک): dedupe با id سرور، بعد append
+        function ingestOwner(row) {
+            const id = Number(row.id);
+            if (chatHistory.some(m => m.id === id)) return false;
+            addMessage('owner', row.text, row.created_at, id);
+            lastSeenId = Math.max(lastSeenId, id);
+            typingEl.classList.remove('active');
+            return true;
+        }
+
         // ===== ارسال پیام =====
         const inputEl = document.getElementById('msg-input');
         const sendBtn = document.getElementById('send-btn');
         const typingEl = document.getElementById('typing');
 
         async function sendMessage() {
-            const text = inputEl.value.trim();
+            const text = inputEl.value.trim().slice(0, 2000);
             if (!text) return;
 
             inputEl.value = '';
-            addMessage('visitor', text);
-
-            // نمایش تایپینگ
-            typingEl.classList.add('active');
-
+            sendBtn.disabled = true;
             try {
-                await fetch(SCRIPT_URL, {
+                // ۱) optimistic: پیام فوراً روی صفحه
+                const tmp = document.createElement('div');
+                tmp.className = 'message visitor pending';
+                tmp.innerHTML = `${escapeHtml(text)}<span class="time">${formatTime(new Date().toISOString())}</span>`;
+                messagesEl.appendChild(tmp);
+                autoScroll();
+                // ۲) سینک سرور از chat-send (ولیدیشن + ذخیره + نوتیف تلگرام)
+                const res = await fetch(`${SUPA_URL}/functions/v1/chat-send`, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ visitorId, message: text })
+                    headers: apiHeaders(),
+                    body: JSON.stringify({ visitor_id: visitorId, text, website: '' })
                 });
+                let j = {};
+                try { j = await res.json(); } catch (e) {}
+                if (!res.ok || !j.ok) throw new Error((j && j.error) || ('http ' + res.status));
+                // ۳) جایگزینی بی‌درز: optimistic -> رکورد سرور (id واقعی برای dedupe)
+                const serverId = Number(j.id);
+                tmp.classList.remove('pending');
+                pendingEls.set(serverId, tmp);
+                chatHistory.push({ sender: 'visitor', text, time: j.at || new Date().toISOString(), id: serverId });
+                saveHistory(chatHistory);
+                lastSeenId = Math.max(lastSeenId, serverId);
+                // ۴) تایپینگ: تا پاسخ مالک از Realtime بیاید
+                typingEl.classList.add('active');
             } catch (e) {
-                console.error('Send error:', e);
+                window.showToast ? window.showToast('ارسال ناموفق بود. دوباره تلاش کنید.') : alert('ارسال ناموفق بود.');
+                inputEl.value = text;
+                renderMessages();
+            } finally {
+                sendBtn.disabled = false;
             }
         }
 
@@ -451,39 +497,55 @@
             }
         });
 
-        // ===== پولینگ - بررسی پاسخ مالک =====
-        async function pollReplies() {
+        // ===== سینک افزایشی: فقط پیام‌های مالکِ جدیدتر از lastSeenId =====
+        async function syncMissed() {
+            if (!SUPA_URL || !SUPA_ANON) return;
             try {
-                const res = await fetch(`${SCRIPT_URL}?visitorId=${visitorId}`);
-                const data = await res.json();
-
-                if (data.success && data.messages) {
-                    const ownerMessages = data.messages.filter(m => m.sender === 'owner');
-                    const knownTimes = new Set(
-                        chatHistory.filter(m => m.sender === 'owner').map(m => m.time)
-                    );
-
-                    let hasNew = false;
-                    for (const msg of ownerMessages) {
-                        if (!knownTimes.has(msg.time)) {
-                            chatHistory.push({ sender: 'owner', text: msg.text, time: msg.time });
-                            hasNew = true;
-                        }
-                    }
-
-                    if (hasNew) {
-                        saveHistory(chatHistory);
-                        renderMessages();
-                        typingEl.classList.remove('active');
-                    }
-                }
-            } catch (e) {
-                // سکوت - پولینگ بعدی تلاش می‌کنه
-            }
+                const url = `${SUPA_URL}/rest/v1/chat_messages?visitor_id=eq.${visitorId}` +
+                    `&sender=eq.owner&id=gt.${lastSeenId}&order=id.asc&select=id,text,created_at`;
+                const res = await fetch(url, { headers: apiHeaders({ 'x-visitor-id': visitorId }) });
+                if (!res.ok) return;
+                const rows = await res.json();
+                let added = false;
+                for (const r of rows) { if (ingestOwner(r)) added = true; }
+                if (added) { saveHistory(chatHistory); renderMessages(); }
+            } catch (e) { /* سکوت - سینک بعدی تلاش می‌کنه */ }
         }
 
-        // شروع پولینگ
-        setInterval(pollReplies, POLL_INTERVAL);
+        // ===== Realtime: پیام مالک همان لحظه می‌رسد (تور امنیت: syncMissed) =====
+        function ensureRealtimeLib(cb) {
+            if (window.supabase) { cb(); return; }
+            const s = document.createElement('script');
+            s.src = '/assets/js/supabase.min.js';
+            s.onload = cb;
+            s.onerror = function () { /* بدون Realtime — فقط سینک دوره‌ای */ };
+            document.head.appendChild(s);
+        }
+        function subscribeChat() {
+            ensureRealtimeLib(function () {
+                if (!window.supabase) return;
+                try {
+                    const client = window.supabase.createClient(SUPA_URL, SUPA_ANON);
+                    client.channel('chat-' + visitorId)
+                        .on('postgres_changes', {
+                            event: 'INSERT', schema: 'public', table: 'chat_messages',
+                            filter: 'visitor_id=eq.' + visitorId
+                        }, function (payload) {
+                            const row = payload.new;
+                            if (row && row.sender === 'owner' && ingestOwner(row)) {
+                                saveHistory(chatHistory);
+                                renderMessages();
+                            } else if (row && row.sender === 'visitor') {
+                                lastSeenId = Math.max(lastSeenId, Number(row.id));
+                            }
+                        })
+                        .subscribe();
+                } catch (e) { /* Realtime در دسترس نیست — سینک دوره‌ای پوشش می‌دهد */ }
+            });
+        }
+
+        // شروع: تاریخچه قدیمی -> سینک عقب‌ماندگی -> Realtime -> تور امنیت دوره‌ای
+        setInterval(syncMissed, SYNC_INTERVAL);
 
         // ===== انیمیشن ستاره =====
         (function initStars() {
@@ -576,9 +638,10 @@
             draw();
         })();
 
-        // ===== شروع =====
+        // ===== شروع: تاریخچه قدیمی (دست‌نخورده) -> سینک عقب‌ماندگی -> Realtime =====
         renderMessages();
-        pollReplies();
+        syncMissed();
+        subscribeChat();
     </script>
 </body>
 </html>

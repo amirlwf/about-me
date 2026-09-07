@@ -185,14 +185,25 @@ def main():
 
         # ---- SQL sanity ----
         sch = open(os.path.join(ROOT, "supabase/schema.sql"), encoding="utf-8").read()
-        check("sql tables", all(k in sch for k in ("create table", "orders", "site_content", "notifications")))
+        check("sql tables", all(k in sch for k in ("create table", "orders", "site_content", "notifications",
+                                                        "chat_messages")))
+        check("sql chat rls", all(k in sch for k in ("chat_anon_insert", "chat_track_own", "chat_admin_all",
+                                                     "x-visitor-id")))
+        fn_dir = os.path.join(ROOT, "supabase", "functions")
+        check("fn chat-send", os.path.isfile(os.path.join(fn_dir, "chat-send", "index.ts")))
+        check("fn chat-webhook", os.path.isfile(os.path.join(fn_dir, "chat-webhook", "index.ts")))
+        check("fn chat-send uses CHAT_BOT_TOKEN",
+              "CHAT_BOT_TOKEN" in open(os.path.join(fn_dir, "chat-send", "index.ts"),
+                                       encoding="utf-8").read())
         check("sql rls", sch.count("create policy") >= 5 and "enable row level security" in sch)
         check("sql phone check", "09[0-9]{9}" in sch)
         check("sql realtime", "supabase_realtime" in sch)
 
-        # ---- callme preserved ----
-        check("callme chat logic",
-              all(k in fetched["/callme/"][1] for k in ("SCRIPT_URL", "pollReplies", "cosmic_chat_visitor", "sendMessage")))
+        # ---- callme: live chat on Supabase Realtime (no Apps Script) ----
+        check("callme no apps-script", "script.google.com" not in fetched["/callme/"][1])
+        check("callme realtime logic",
+              all(k in fetched["/callme/"][1] for k in ("chat-send", "syncMissed", "subscribeChat",
+                                                        "cosmic_chat_visitor", "cosmic_chat_history")))
     finally:
         srv.shutdown()
 
