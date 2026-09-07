@@ -97,6 +97,17 @@ def main():
             check(p + " internal links",
                   all(x in html for x in ("/services/", "/callme/")) or p == "/",
                   "missing service/callme links")
+            # geo + site identity (Hashtgerd local SEO)
+            check(p + " geo tags",
+                  all(k in html for k in ('geo.region" content="IR-30"', 'geo.placename',
+                                           'geo.position" content="35.96;50.68"',
+                                           'og:site_name')),
+                  "missing geo/site_name")
+            # rich JSON-LD: ProfessionalService carries image + sameAs
+            check(p + " json-ld rich",
+                  '"image":"https://amirlwf.ir/assets/img/og-cover.jpg"' in html
+                  and '"sameAs":["https://t.me/arlwf"]' in html,
+                  "missing image/sameAs in JSON-LD")
 
         # ---- content depth ----
         for p in ["/services/edit.html", "/services/web.html", "/services/pc.html"]:
@@ -118,6 +129,7 @@ def main():
                   "/services/edit.html", "/callme/"]:
             check("sitemap has " + u, u in sm)
         check("sitemap hreflang", 'hreflang="fa"' in sm)
+        check("sitemap lastmod", sm.count("<lastmod>") >= 5, f"lastmod x{sm.count('<lastmod>')}")
         check("robots sitemap", "sitemap.xml" in fetched["/robots.txt"][1].lower())
 
         # ---- site-content.json ----
