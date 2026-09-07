@@ -1,5 +1,6 @@
 /* ===== amirlwf.ir — shared cosmic theme (local, zero external requests) ===== */
-@import url('../fonts/fonts.css');
+/* NOTE: fonts.css is loaded via <link> before this file — never @import it
+   (import would serialize font discovery behind this stylesheet). */
 
 :root {
   --turquoise: #40e0d0;
