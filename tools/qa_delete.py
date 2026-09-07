@@ -1,5 +1,6 @@
 """E2E: admin login -> delete order #8 via UI button -> confirm row gone.
-Reads creds from .env (never prints them). Fails loudly on any step."""
+Reads creds from .env (never prints them). Handles the JS confirm dialog
+via Page.handleJavaScriptDialog. Fails loudly on any step."""
 import io
 import json
 import re
@@ -23,15 +24,23 @@ assert EMAIL and PASSWORD, "ADMIN_EMAIL/PASSWORD missing in .env"
 ver = json.load(urllib.request.urlopen("http://127.0.0.1:%d/json" % PORT, timeout=10))
 tab = [t for t in ver if t.get("type") == "page"][0]
 ws = create_connection(tab["webSocketDebuggerUrl"], suppress_origin=True)
+ws.settimeout(30)
 ID = [0]
 
 
 def cdp(method, params=None):
+    """Send command; auto-accept any JS dialog while waiting for the reply."""
     ID[0] += 1
-    ws.send(json.dumps({"id": ID[0], "method": method, "params": params or {}}))
+    my_id = ID[0]
+    ws.send(json.dumps({"id": my_id, "method": method, "params": params or {}}))
     while True:
         msg = json.loads(ws.recv())
-        if msg.get("id") == ID[0]:
+        if msg.get("method") == "Page.javascriptDialogOpening":
+            ws.send(json.dumps({"id": 90000 + my_id,
+                                "method": "Page.handleJavaScriptDialog",
+                                "params": {"accept": True}}))
+            continue
+        if msg.get("id") == my_id:
             return msg.get("result", {})
 
 
@@ -43,10 +52,6 @@ def js(expr):
 
 cdp("Page.enable")
 cdp("Runtime.enable")
-# auto-accept the delete confirm dialog
-cdp("Page.addScriptToEvaluateOnNewDocument",
-    {"source": "addEventListener('dialog',e=>{if(e.type==='confirm')e.accept()});"
-               "window.addEventListener('dialog',e=>{if(e.type==='confirm')e.accept()});"})
 cdp("Page.navigate", {"url": BASE + "/admin/"})
 time.sleep(4)
 
@@ -54,7 +59,7 @@ js("(async () => { document.getElementById('l-email').value = %s; "
    "document.getElementById('l-pass').value = %s; "
    "document.getElementById('login-form').requestSubmit(); return 1; })()"
    % (json.dumps(EMAIL), json.dumps(PASSWORD)))
-time.sleep(5)
+time.sleep(6)
 
 panel = js("document.getElementById('panel-section').classList.contains('hidden') ? 'hidden' : 'visible'")
 print("panel:", panel)
