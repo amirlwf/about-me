@@ -103,7 +103,9 @@
         img.src = CH_ICON[it.kind] || CH_ICON.phone;
         img.alt = it.label;
         img.loading = 'lazy';
-        img.className = it.kind === 'rubika' ? 'ch-icon-wide' : 'ch-icon';
+        img.decoding = 'async';
+        if (it.kind === 'rubika') { img.className = 'ch-icon-wide'; img.width = 52; img.height = 22; }
+        else { img.className = 'ch-icon'; img.width = 22; img.height = 22; }
         a.appendChild(img);
         a.appendChild(document.createTextNode(it.label));
         box.appendChild(a);
