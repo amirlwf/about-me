@@ -92,6 +92,7 @@
         '<button data-act="accept">✅ قبول</button>' +
         '<button data-act="done">✔️ انجام شد</button>' +
         '<button data-act="reply">💬 پاسخ</button>' +
+        '<button data-act="del">🗑 حذف</button>' +
         '</div></td>';
       ordersBody.appendChild(tr);
     });
@@ -108,8 +109,21 @@
     else if (act === 'reply') {
       var text = window.prompt('پاسخ به مشتری (در پنل و اعلان ذخیره می‌شود):');
       if (text) setReply(id, text);
+    } else if (act === 'del') {
+      if (window.confirm('سفارش #' + id + ' برای همیشه حذف شود؟')) delOrder(id, tr);
     }
   });
+
+  function delOrder(id, tr) {
+    client.from('orders').delete().eq('id', id).then(function (res) {
+      if (res.error) { window.showToast('خطا: ' + res.error.message); return; }
+      // optimistic: drop the row now; Realtime DELETE confirms across tabs
+      try { if (tr && tr.parentNode) tr.parentNode.removeChild(tr); } catch (e) {}
+      orders = orders.filter(function (o) { return String(o.id) !== String(id); });
+      window.showToast('سفارش #' + id + ' حذف شد.');
+      loadOrders();
+    });
+  }
 
   function setStatus(id, status) {
     client.from('orders').update({ status: status }).eq('id', id).then(function (res) {
