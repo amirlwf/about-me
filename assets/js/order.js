@@ -170,7 +170,20 @@
     startLiveTracking(id, token);
   }
 
+  function ensureSupabaseLib(cb) {
+    if (window.supabase) { cb(); return; }
+    var s = document.createElement('script');
+    s.src = '/assets/js/supabase.min.js';
+    s.onload = cb;
+    s.onerror = function () { cb(); }; // startLiveTracking falls back to polling
+    document.head.appendChild(s);
+  }
+
   function startLiveTracking(id, token) {
+    ensureSupabaseLib(function () { startLiveTrackingInner(id, token); });
+  }
+
+  function startLiveTrackingInner(id, token) {
     if (!cfg.SUPABASE_URL || !window.supabase) { pollFallback(id, token); return; }
     try {
       var client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);

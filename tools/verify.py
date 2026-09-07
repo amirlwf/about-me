@@ -97,6 +97,15 @@ def main():
             check(p + " internal links",
                   all(x in html for x in ("/services/", "/callme/")) or p == "/",
                   "missing service/callme links")
+            # perf: LCP font preloaded, heavy supabase lib NOT in initial load
+            # (public pages only — admin needs realtime eagerly, callme has no supabase at all)
+            if p in ("/", "/services/pc.html", "/services/web.html", "/services/edit.html"):
+                check(p + " font preload",
+                      'rel="preload" href="/assets/fonts/lalezar-400-arabic.woff2"' in html,
+                      "missing LCP font preload")
+                check(p + " no eager supabase lib",
+                      "supabase.min.js" not in html,
+                      "supabase.min.js still eager-loaded")
             # geo + site identity (Hashtgerd local SEO)
             check(p + " geo tags",
                   all(k in html for k in ('geo.region" content="IR-30"', 'geo.placename',
