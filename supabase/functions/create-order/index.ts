@@ -6,7 +6,11 @@
 // - EN free-edit lead (source=en_landing or type=free_edit): name + email,
 //   no phone; service forced to edit/free_edit; distinct Telegram format.
 // Deploy: supabase functions deploy create-order --no-verify-jwt
-// Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TELEGRAM_BOT_TOKEN (opt), ADMIN_CHAT_ID (opt)
+// Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+//   FA_BOT_TOKEN + FA_CHAT_ID (Persian orders, original bot — untouched behavior),
+//   EN_BOT_TOKEN + EN_CHAT_ID (English free-edit leads, new bot).
+// Legacy TELEGRAM_BOT_TOKEN / ADMIN_CHAT_ID still work as fallback for FA,
+// so old setups keep notifying until the FA_* secrets are set.
 // IMPORTANT: run supabase/migration_en_leads.sql BEFORE deploying this version.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
@@ -122,9 +126,12 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "db insert failed" }), { status: 500, headers: cors });
   }
 
-  // Telegram notify (mock-safe: skipped when secrets absent)
-  const tgToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
-  const chatId = Deno.env.get("ADMIN_CHAT_ID") || "";
+  // Telegram notify (mock-safe: skipped when secrets absent).
+  // FA orders -> FA bot; EN leads -> EN bot. Fully separate.
+  const faToken = Deno.env.get("FA_BOT_TOKEN") || Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
+  const faChat = Deno.env.get("FA_CHAT_ID") || Deno.env.get("ADMIN_CHAT_ID") || "";
+  const enToken = Deno.env.get("EN_BOT_TOKEN") || "";
+  const enChat = Deno.env.get("EN_CHAT_ID") || "";
   const msg = isEN
     ? `🎬 <b>[EN-FREE] New lead #order-${data.id}</b>\n` +
       `Name: ${esc(name)}\nEmail: <code>${esc(email)}</code>\n` +
@@ -135,13 +142,15 @@ Deno.serve(async (req: Request) => {
       `نام: ${esc(name)}\nتلفن: <code>${esc(phone)}</code>\n` +
       `شرح: ${esc(desc.slice(0, 500))}`;
   let tgSent = false;
-  if (tgToken && chatId) {
-    tgSent = await sendTelegram(tgToken, chatId, msg);
+  if (isEN) {
+    if (enToken && enChat) tgSent = await sendTelegram(enToken, enChat, msg);
+  } else if (faToken && faChat) {
+    tgSent = await sendTelegram(faToken, faChat, msg);
   }
   await supa.from("notifications").insert({
     order_id: data.id,
     channel: "telegram",
-    payload: { sent: tgSent, mock: !(tgToken && chatId), source: isEN ? "en_landing" : "fa_site" },
+    payload: { sent: tgSent, mock: !((isEN ? (enToken && enChat) : (faToken && faChat))), source: isEN ? "en_landing" : "fa_site" },
   });
 
   return new Response(JSON.stringify({ id: data.id, track_token: trackToken }), {
