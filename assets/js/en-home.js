@@ -168,6 +168,7 @@
       });
       window.SITE_CONTENT = data;
       applyEnHome(data);
+      buildSplash((data && data.en_home) || {});
     }
     function loadPortfolio() {
       if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || !window.fetch) return;
@@ -177,13 +178,82 @@
         .then(renderPortfolio)
         .catch(function () { /* static frames stay */ });
     }
-    if (!cfg.SUPABASE_URL || !window.fetch) { applyEnHome({}); return; }
+    if (!cfg.SUPABASE_URL || !window.fetch) { applyEnHome({}); buildSplash({}); return; }
     fetch(cfg.SUPABASE_URL + '/rest/v1/site_content?select=key,value', {
       headers: { apikey: cfg.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + cfg.SUPABASE_ANON_KEY }
     }).then(function (r) { return r.ok ? r.json() : []; })
       .then(done)
-      .catch(function () { applyEnHome({}); });
+      .catch(function () { applyEnHome({}); buildSplash({}); });
     loadPortfolio();
+  }
+
+  /* ---------- cinematic entry splash: once per session, JS-built ----------
+     Static HTML keeps zero splash markup (SEO + no-JS stay clean).
+     Text comes from data-splash-* hooks applied below via en_home. */
+  var SPLASH_SEEN = 'enSplashSeen';
+  function prefersCalm() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+  function splashSeen() {
+    try { return window.sessionStorage && sessionStorage.getItem(SPLASH_SEEN) === '1'; }
+    catch (e) { return true; } // storage blocked -> never splash
+  }
+  function markSeen() {
+    try { if (window.sessionStorage) sessionStorage.setItem(SPLASH_SEEN, '1'); } catch (e) {}
+  }
+  function dismissSplash(ov) {
+    if (!ov || ov.classList.contains('leaving')) return;
+    ov.classList.add('leaving');
+    document.body.classList.remove('splash-lock');
+    markSeen();
+    window.setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 950);
+  }
+  function buildSplash(home) {
+    if (splashSeen() || prefersCalm()) return;
+    var brand = document.querySelector('.brand');
+    var brandName = (brand && brand.textContent.trim()) || 'Amir Reza Lotfi';
+    var title = (home && typeof home.splash_title === 'string' && home.splash_title.trim())
+      ? home.splash_title.trim() : brandName;
+    var kicker = (home && home.splash_kicker) || 'SHOWREEL · 2026';
+    var sub = (home && home.splash_sub) || 'Short-Form Video Editor';
+    var cta = (home && home.splash_cta) || 'Enter';
+    var ov = document.createElement('div');
+    ov.className = 'en-splash';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-label', title);
+    var inner = document.createElement('div');
+    inner.className = 'splash-inner';
+    var k = document.createElement('p');
+    k.className = 'splash-kicker'; k.textContent = kicker;
+    var h = document.createElement('h2');
+    h.className = 'splash-title';
+    title.split(' ').forEach(function (word, i) {
+      var s = document.createElement('span');
+      s.style.animationDelay = (0.25 + i * 0.12) + 's';
+      s.textContent = word;
+      h.appendChild(s);
+      h.appendChild(document.createTextNode(' '));
+    });
+    var p = document.createElement('p');
+    p.className = 'splash-sub'; p.textContent = sub;
+    var btn = document.createElement('button');
+    btn.className = 'splash-cta'; btn.type = 'button'; btn.textContent = cta;
+    var bar = document.createElement('div');
+    bar.className = 'splash-bar'; bar.innerHTML = '<i></i>';
+    var skip = document.createElement('p');
+    skip.className = 'splash-skip'; skip.textContent = 'Tap anywhere to enter';
+    inner.appendChild(k); inner.appendChild(h); inner.appendChild(p);
+    inner.appendChild(btn); inner.appendChild(bar); inner.appendChild(skip);
+    ov.appendChild(inner);
+    document.body.appendChild(ov);
+    document.body.classList.add('splash-lock');
+    var dismissed = function () { dismissSplash(ov); };
+    ov.addEventListener('click', dismissed);
+    btn.addEventListener('click', dismissed);
+    document.addEventListener('keydown', function esc(ev) {
+      if (ev.key === 'Escape') { dismissed(); document.removeEventListener('keydown', esc); }
+    });
+    window.setTimeout(dismissed, 3000); // auto-enter after the bar fills
   }
 
   /* ---------- scroll reveal ---------- */

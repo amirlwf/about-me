@@ -218,3 +218,48 @@ body {
   transition: opacity .25s, transform .25s;
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- cinematic entry splash (built by en-home.js, once per session) ---------- */
+body.splash-lock { overflow: hidden; }
+.en-splash {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(120% 90% at 50% 8%, #1c2650 0%, #0b1020 55%, #05070d 100%);
+  color: #f4f6fb; text-align: center; cursor: pointer;
+  animation: splashIn .5s ease both;
+}
+.en-splash::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.08) 45%, transparent 60%);
+  background-size: 250% 100%;
+  animation: splashSheen 2.6s ease .2s both;
+}
+.splash-inner { position: relative; padding: 0 24px; max-width: 660px; }
+.splash-kicker {
+  margin: 0; font-size: .75rem; font-weight: 700; letter-spacing: .35em;
+  color: #9fb3ff;
+  animation: splashFadeUp .7s cubic-bezier(.16,1,.3,1) .1s both;
+}
+.splash-title {
+  margin: 14px 0 10px;
+  font-size: clamp(2.4rem, 9vw, 4.2rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05;
+}
+.splash-title span { display: inline-block; opacity: 0; animation: splashRise .7s cubic-bezier(.16,1,.3,1) forwards; }
+.splash-sub { margin: 0; color: #c3cbdb; font-size: 1.05rem; animation: splashFadeUp .7s cubic-bezier(.16,1,.3,1) .8s both; }
+.splash-cta {
+  margin-top: 26px; font: inherit; font-weight: 700; font-size: 1rem;
+  color: #0b1020; background: #fff; border: 0; border-radius: 999px; padding: 13px 34px; cursor: pointer;
+  animation: splashFadeUp .6s ease 1.1s both, splashPulse 2s ease-in-out 1.8s infinite;
+}
+.splash-cta:hover { background: #dbe4ff; }
+.splash-bar { width: min(280px, 60vw); height: 3px; background: rgba(255,255,255,.16); border-radius: 99px; margin: 26px auto 0; overflow: hidden; }
+.splash-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #7aa2ff, #ffffff); animation: splashBar 2.7s linear .2s forwards; }
+.splash-skip { margin: 14px 0 0; font-size: .8rem; color: #8b94a7; }
+.en-splash.leaving { transform: translateY(-100%); transition: transform .9s cubic-bezier(.7,0,.2,1); }
+.en-splash.leaving .splash-inner { opacity: 0; transform: translateY(-24px); transition: opacity .35s ease, transform .35s ease; }
+@keyframes splashIn { from { opacity: 0; } }
+@keyframes splashFadeUp { from { opacity: 0; transform: translateY(18px); } }
+@keyframes splashRise { from { opacity: 0; transform: translateY(.55em) rotate(2deg); } }
+@keyframes splashBar { to { width: 100%; } }
+@keyframes splashSheen { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+@keyframes splashPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,.45); } 50% { box-shadow: 0 0 0 12px rgba(255,255,255,0); } }

@@ -122,6 +122,11 @@ def main():
         check("en theme separate", "en-minimal.css" in en and "site.css" not in en)
         check("en dyn hooks", all(k in en for k in ('data-en="hero_title"', 'data-channels-en',
               'id="portfolio-grid"', 'en-home.js')))
+        check("en splash hooks", all(k in en for k in ('en-home.js',))
+              and all(k in open(os.path.join(ROOT, "assets/js/en-home.js"), encoding="utf-8").read()
+                      for k in ("en-splash", "buildSplash", "enSplashSeen", "prefers-reduced-motion")))
+        check("en splash style", all(k in open(os.path.join(ROOT, "assets/css/en-minimal.css"), encoding="utf-8").read()
+              for k in (".en-splash", "splashRise", "splash-skip")))
         check("en form", all(k in en for k in ('id="en-lead-form"', 'id="e-name"', 'id="e-email"',
               'id="e-link"', 'id="e-notes"', 'value="free_edit"', 'id="e-website"',
               'id="e-captcha-q"', 'id="en-success"', 'id="en-track-code"')))
@@ -147,7 +152,7 @@ def main():
               'data-tab="channels"', 'data-tab="portfolio"', 'id="page-select"')))
         check("admin channels fields", all(k in adm for k in ('id="channels-fields"', 'save-channels-btn'))
               and all(k in open(os.path.join(ROOT, "assets/js/admin.js"), encoding="utf-8").read()
-                      for k in ("'linkedin'", "'youtube'", "'email'")))
+                      for k in ("'linkedin'", "'youtube'", "'email'", "'splash_title'")))
         check("admin portfolio ui", all(k in adm for k in ('p-thumb', 'p-add-btn', 'portfolio-body')))
         check("admin source filter", 'id="source-filter"' in adm)
         check("admin light theme", "admin.css" in adm)
