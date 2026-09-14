@@ -9,10 +9,10 @@ from urllib.parse import urljoin
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = "http://127.0.0.1:8471"
-PAGES = ["/", "/services/edit.html", "/services/web.html", "/services/pc.html",
+PAGES = ["/", "/en/", "/services/edit.html", "/services/web.html", "/services/pc.html",
          "/callme/", "/admin/", "/sitemap.xml", "/robots.txt",
-         "/data/site-content.json", "/assets/css/site.css",
-         "/assets/js/site.js", "/assets/js/order.js", "/assets/js/admin.js",
+         "/data/site-content.json", "/assets/css/site.css", "/assets/css/en-minimal.css",
+         "/assets/js/site.js", "/assets/js/order.js", "/assets/js/en-lead.js", "/assets/js/admin.js",
          "/assets/js/supabase-config.js", "/assets/js/supabase.min.js",
          "/assets/fonts/fonts.css", "/assets/img/telegram.svg",
          "/assets/img/whatsapp.svg", "/assets/img/rubika.svg", "/assets/img/phone.svg",
@@ -132,13 +132,46 @@ def main():
                   all(k in html for k in ('id="order-form"', 'id="f-phone"', 'required',
                                           'id="f-website"', 'id="captcha-q"', 'id="track-box"')))
 
+        # ---- EN landing (/en/): separate theme, EN form, SEO ----
+        en = fetched["/en/"][1]
+        check("en lang", '<html lang="en"' in en)
+        t = re.search(r"<title>(.*?)</title>", en, re.S)
+        check("en title", bool(t) and t.group(1) == "Short-Form Video Editor | Get 1 Free Edit",
+              t.group(1)[:70] if t else "missing")
+        d = re.search(r'<meta name="description" content="(.*?)"', en)
+        check("en desc", bool(d) and len(d.group(1)) <= 155, (d.group(1)[:70] if d else "missing"))
+        check("en canonical", '<link rel="canonical" href="https://amirlwf.ir/en/">' in en)
+        check("en hreflang out", 'hreflang="fa" href="https://amirlwf.ir/"' in en
+              and 'hreflang="en" href="https://amirlwf.ir/en/"' in en)
+        check("fa hreflang back", 'hreflang="en" href="https://amirlwf.ir/en/"' in fetched["/"][1])
+        check("en single h1", en.count("<h1") == 1, f"h1x{en.count('<h1')}")
+        check("en hero", "I Edit Scroll-Stopping Shorts" in en and "Get 1 Free Edit" in en)
+        check("en theme separate", "en-minimal.css" in en and "site.css" not in en)
+        check("en form", all(k in en for k in ('id="en-lead-form"', 'id="e-name"', 'id="e-email"',
+              'id="e-link"', 'id="e-notes"', 'value="free_edit"', 'id="e-website"',
+              'id="e-captcha-q"', 'id="en-success"', 'id="en-track-code"')))
+        check("en no phone field", 'id="f-phone"' not in en)
+        check("en CSP meta", "Content-Security-Policy" in en)
+        ext = [u for u in re.findall(r'''(?:href|src|url\()[\"']?(https?://[^\"'\)]+)''', en)
+               if "amirlwf.ir" not in u and "supabase.co" not in u]
+        check("en zero third-party", not ext, str(ext[:3]))
+        blobs = re.findall(r'<script type=\"application/ld\+json\">(.*?)</script>', en, re.S)
+        ok, types = True, []
+        for b in blobs:
+            try:
+                types.append(json.loads(b).get("@type"))
+            except Exception:
+                ok = False
+        check("en json-ld valid", ok and "ProfessionalService" in types
+              and "FAQPage" in types and "BreadcrumbList" in types, str(types))
+
         # ---- sitemap/robots ----
         sm = fetched["/sitemap.xml"][1]
-        for u in ["https://amirlwf.ir/", "/services/pc.html", "/services/web.html",
+        for u in ["https://amirlwf.ir/", "https://amirlwf.ir/en/", "/services/pc.html", "/services/web.html",
                   "/services/edit.html", "/callme/"]:
             check("sitemap has " + u, u in sm)
-        check("sitemap hreflang", 'hreflang="fa"' in sm)
-        check("sitemap lastmod", sm.count("<lastmod>") >= 5, f"lastmod x{sm.count('<lastmod>')}")
+        check("sitemap hreflang", 'hreflang="fa"' in sm and 'hreflang="en"' in sm)
+        check("sitemap lastmod", sm.count("<lastmod>") >= 6, f"lastmod x{sm.count('<lastmod>')}")
         check("robots sitemap", "sitemap.xml" in fetched["/robots.txt"][1].lower())
 
         # ---- site-content.json ----
@@ -179,7 +212,7 @@ def main():
             check(f + " no service_role", "service_role" not in src.lower() or "NEVER" in src)
 
         # ---- JS syntax ----
-        for f in ("assets/js/site.js", "assets/js/order.js", "assets/js/admin.js", "assets/js/supabase-config.js"):
+        for f in ("assets/js/site.js", "assets/js/order.js", "assets/js/en-lead.js", "assets/js/admin.js", "assets/js/supabase-config.js"):
             r = subprocess.run(["node", "--check", os.path.join(ROOT, f)], capture_output=True, text=True)
             check("node --check " + f, r.returncode == 0, r.stderr.strip()[:120])
 

@@ -83,8 +83,8 @@
       var when = isNaN(d) ? '' : d.toLocaleString('fa-IR');
       tr.innerHTML =
         '<td>' + esc(when) + '</td>' +
-        '<td>' + esc(o.name) + '</td>' +
-        '<td dir="ltr">' + esc(o.phone) + '</td>' +
+        '<td>' + esc(o.name) + (o.source === 'en_landing' ? ' 🎬<strong>[EN-FREE]</strong>' : '') + '</td>' +
+        '<td dir="ltr">' + esc(o.phone || o.email || '') + '</td>' +
         '<td>' + esc(o.service) + ' / ' + esc(o.sub_service) + '</td>' +
         '<td>' + esc(o.description) + (o.admin_reply ? '<br><strong>پاسخ شما:</strong> ' + esc(o.admin_reply) : '') + '</td>' +
         '<td><span class="status-badge status-' + esc(o.status) + '">' + esc(STATUS_FA[o.status] || o.status) + '</span></td>' +
@@ -199,7 +199,7 @@
           var label = '🔔 سفارش جدید: ' + (payload.new.name || '') + ' — ' + (payload.new.service || '');
           window.showToast(label);
           notifyAdmin('سفارش جدید 🧾', (payload.new.name || '') + ' — ' + (payload.new.service || '') +
-            ' — ' + (payload.new.phone || ''));
+            ' — ' + (payload.new.phone || payload.new.email || ''));
           beep();
         } else if (payload.eventType === 'UPDATE') {
           orders = orders.map(function (o) { return o.id === payload.new.id ? payload.new : o; });

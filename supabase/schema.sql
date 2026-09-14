@@ -8,13 +8,16 @@ create table if not exists public.orders (
   id          bigint generated always as identity primary key,
   created_at  timestamptz not null default now(),
   name        text not null check (char_length(name) between 2 and 80),
-  phone       text not null check (phone ~ '^09[0-9]{9}$'),
+  phone       text check (phone ~ '^09[0-9]{9}$'),
+  email       text check (email is null or email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
   service     text not null check (service in ('edit', 'web', 'pc')),
   sub_service text,
   description text not null check (char_length(description) between 5 and 2000),
   status      text not null default 'new' check (status in ('new', 'in_progress', 'done')),
   track_token uuid not null,
   source_ip   text,
+  source      text not null default 'fa_site' check (source in ('fa_site', 'en_landing')),
+  raw_link    text check (raw_link is null or char_length(raw_link) <= 500),
   admin_reply text
 );
 create index if not exists orders_created_idx on public.orders (created_at desc);
@@ -52,14 +55,20 @@ $$ select coalesce((auth.jwt() -> 'user_metadata' ->> 'role'), '') = 'admin' $$;
 
 -- --- orders ---
 -- anon: INSERT only, with server-side CHECKs (phone format enforced by DB too)
+-- EN branch: source='en_landing' leads carry a valid email + NULL phone,
+-- service fixed to edit/free_edit (see migration_en_leads.sql)
 drop policy if exists orders_anon_insert on public.orders;
 create policy orders_anon_insert on public.orders
   for insert to anon
   with check (
-    phone ~ '^09[0-9]{9}$'
-    and service in ('edit', 'web', 'pc')
-    and char_length(name) between 2 and 80
+    char_length(name) between 2 and 80
     and char_length(description) between 5 and 2000
+    and service in ('edit', 'web', 'pc')
+    and (
+      (source = 'fa_site' and phone ~ '^09[0-9]{9}$')
+      or (source = 'en_landing' and service = 'edit' and phone is null
+          and email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+    )
   );
 
 -- anon: read ONLY their own order, scoped by the unguessable track token

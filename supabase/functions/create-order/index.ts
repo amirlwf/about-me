@@ -1,7 +1,13 @@
-// create-order — public order endpoint with server-side validation,
+// create-order — public order/lead endpoint with server-side validation,
 // honeypot check, edge rate-limit (<=3 orders/hour per IP), Telegram notify.
+//
+// Two modes share this endpoint:
+// - FA order (source=fa_site, default): Iranian mobile + service required.
+// - EN free-edit lead (source=en_landing or type=free_edit): name + email,
+//   no phone; service forced to edit/free_edit; distinct Telegram format.
 // Deploy: supabase functions deploy create-order --no-verify-jwt
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TELEGRAM_BOT_TOKEN (opt), ADMIN_CHAT_ID (opt)
+// IMPORTANT: run supabase/migration_en_leads.sql BEFORE deploying this version.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 const cors = {
@@ -11,6 +17,7 @@ const cors = {
 };
 
 const IR_MOBILE = /^09\d{9}$/;
+const EMAIL = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const SERVICES = ["edit", "web", "pc"];
 const RATE_LIMIT = 3; // orders per hour per IP
 
@@ -31,6 +38,10 @@ function esc(s: unknown): string {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function bad(msg: string, status = 400) {
+  return new Response(JSON.stringify({ error: msg }), { status, headers: cors });
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") {
@@ -48,17 +59,33 @@ Deno.serve(async (req: Request) => {
   if (body.website) return new Response(JSON.stringify({ error: "spam" }), { status: 400, headers: cors });
 
   const name = String(body.name ?? "").trim();
+  const trackToken = String(body.track_token ?? "").trim();
+  const source = String(body.source ?? "fa_site").trim() || "fa_site";
+  const type = String(body.type ?? "").trim();
+  const isEN = source === "en_landing" || type === "free_edit";
+
+  if (name.length < 2 || name.length > 80) return bad("invalid name");
+  if (!/^[0-9a-f-]{36}$/i.test(trackToken)) return bad("invalid token");
+
+  // per-mode fields + validation
   const phone = String(body.phone ?? "").trim().replace(/[\s-]/g, "");
   const service = String(body.service ?? "").trim();
   const sub = String(body.sub_service ?? "").trim().slice(0, 120);
   const desc = String(body.description ?? "").trim();
-  const trackToken = String(body.track_token ?? "").trim();
+  const email = String(body.email ?? "").trim().toLowerCase();
+  const rawLink = String(body.raw_link ?? (body as Record<string, unknown>).rawLink ?? "").trim().slice(0, 500);
 
-  if (!IR_MOBILE.test(phone)) return new Response(JSON.stringify({ error: "invalid phone" }), { status: 400, headers: cors });
-  if (!SERVICES.includes(service)) return new Response(JSON.stringify({ error: "invalid service" }), { status: 400, headers: cors });
-  if (name.length < 2 || name.length > 80) return new Response(JSON.stringify({ error: "invalid name" }), { status: 400, headers: cors });
-  if (desc.length < 5 || desc.length > 2000) return new Response(JSON.stringify({ error: "invalid description" }), { status: 400, headers: cors });
-  if (!/^[0-9a-f-]{36}$/i.test(trackToken)) return new Response(JSON.stringify({ error: "invalid token" }), { status: 400, headers: cors });
+  if (isEN) {
+    if (!EMAIL.test(email) || email.length > 160) return bad("invalid email");
+    if (service !== "edit") return bad("invalid service");
+    if (sub !== "" && sub !== "free_edit") return bad("invalid sub_service");
+    if (desc.length < 5 || desc.length > 2000) return bad("invalid description");
+    if (rawLink && !/^https?:\/\/\S+\.\S+/.test(rawLink)) return bad("invalid link");
+  } else {
+    if (!IR_MOBILE.test(phone)) return bad("invalid phone");
+    if (!SERVICES.includes(service)) return bad("invalid service");
+    if (desc.length < 5 || desc.length > 2000) return bad("invalid description");
+  }
 
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -70,7 +97,7 @@ Deno.serve(async (req: Request) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  // edge rate-limit: <=3 orders/hour per IP
+  // edge rate-limit: <=3 orders/hour per IP (both modes share the bucket)
   const hourAgo = new Date(Date.now() - 3600_000).toISOString();
   const { count } = await supa
     .from("orders")
@@ -81,9 +108,14 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "rate limited: max 3 orders/hour" }), { status: 429, headers: cors });
   }
 
+  const row = isEN
+    ? { name, phone: null, email, service: "edit", sub_service: "free_edit", description: desc,
+        raw_link: rawLink || null, track_token: trackToken, source_ip: ip, source: "en_landing", status: "new" }
+    : { name, phone, service, sub_service: sub, description: desc, track_token: trackToken, source_ip: ip, status: "new" };
+
   const { data, error } = await supa
     .from("orders")
-    .insert({ name, phone, service, sub_service: sub, description: desc, track_token: trackToken, source_ip: ip, status: "new" })
+    .insert(row)
     .select("id")
     .single();
   if (error || !data) {
@@ -93,11 +125,15 @@ Deno.serve(async (req: Request) => {
   // Telegram notify (mock-safe: skipped when secrets absent)
   const tgToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
   const chatId = Deno.env.get("ADMIN_CHAT_ID") || "";
-  const msg =
-    `🧾 <b>سفارش جدید #order-${data.id}</b>\n` +
-    `خدمت: ${esc(service)} / ${esc(sub)}\n` +
-    `نام: ${esc(name)}\nتلفن: <code>${esc(phone)}</code>\n` +
-    `شرح: ${esc(desc.slice(0, 500))}`;
+  const msg = isEN
+    ? `🎬 <b>[EN-FREE] New lead #order-${data.id}</b>\n` +
+      `Name: ${esc(name)}\nEmail: <code>${esc(email)}</code>\n` +
+      (rawLink ? `Footage: ${esc(rawLink)}\n` : "") +
+      `Notes: ${esc(desc.slice(0, 500))}`
+    : `🧾 <b>سفارش جدید #order-${data.id}</b>\n` +
+      `خدمت: ${esc(service)} / ${esc(sub)}\n` +
+      `نام: ${esc(name)}\nتلفن: <code>${esc(phone)}</code>\n` +
+      `شرح: ${esc(desc.slice(0, 500))}`;
   let tgSent = false;
   if (tgToken && chatId) {
     tgSent = await sendTelegram(tgToken, chatId, msg);
@@ -105,7 +141,7 @@ Deno.serve(async (req: Request) => {
   await supa.from("notifications").insert({
     order_id: data.id,
     channel: "telegram",
-    payload: { sent: tgSent, mock: !(tgToken && chatId) },
+    payload: { sent: tgSent, mock: !(tgToken && chatId), source: isEN ? "en_landing" : "fa_site" },
   });
 
   return new Response(JSON.stringify({ id: data.id, track_token: trackToken }), {
