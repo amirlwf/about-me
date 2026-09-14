@@ -83,22 +83,46 @@
   }
 
   var CH_ICON = { phone: '/assets/img/phone.svg', telegram: '/assets/img/telegram.svg',
-    whatsapp: '/assets/img/whatsapp.svg', rubika: '/assets/img/rubika.svg' };
+    whatsapp: '/assets/img/whatsapp.svg', rubika: '/assets/img/rubika.svg',
+    email: '/assets/img/mail.svg', linkedin: '/assets/img/linkedin.svg',
+    youtube: '/assets/img/youtube.svg' };
+  var CH_LABEL_FA = { phone: null, telegram: 'تلگرام', whatsapp: 'واتساپ', rubika: 'روبیکا',
+    email: 'ایمیل', linkedin: 'لینکدین', youtube: 'یوتیوب' };
+
+  function channelHref(kind, val) {
+    val = String(val || '').trim();
+    if (!val || val === 'CHANGE_ME') return null;
+    if (kind === 'phone' || kind === 'whatsapp') {
+      var digits = val.replace(/^0/, '');
+      if (!/^\d{7,15}$/.test(digits)) return null;
+      return kind === 'phone' ? 'tel:+98' + digits : 'https://wa.me/98' + digits;
+    }
+    if (kind === 'email') return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val) ? 'mailto:' + val : null;
+    if (kind === 'telegram') return 'https://t.me/' + val.replace(/^@/, '');
+    if (kind === 'linkedin') return val.indexOf('http') === 0 ? val : 'https://linkedin.com/in/' + val.replace(/^@/, '');
+    if (kind === 'youtube') return val.indexOf('http') === 0 ? val : 'https://youtube.com/' + val.replace(/^@/, '');
+    if (kind === 'rubika') return val.indexOf('http') === 0 ? val : 'https://rubika.ir/' + val;
+    return null;
+  }
 
   function renderChannels(biz) {
     document.querySelectorAll('[data-channels]').forEach(function (box) {
       var en = biz.channels_enabled || {};
+      var kinds = ['phone', 'telegram', 'whatsapp', 'rubika', 'email', 'linkedin', 'youtube'];
       var items = [];
-      if (en.phone !== false && biz.phone) items.push({ kind: 'phone', href: 'tel:+98' + String(biz.phone).replace(/^0/, ''), label: biz.phone });
-      if (en.telegram !== false && biz.telegram && biz.telegram !== 'CHANGE_ME') items.push({ kind: 'telegram', href: 'https://t.me/' + biz.telegram, label: 'تلگرام' });
-      if (en.whatsapp !== false && biz.whatsapp) items.push({ kind: 'whatsapp', href: 'https://wa.me/98' + String(biz.whatsapp).replace(/^0/, ''), label: 'واتساپ' });
-      if (en.rubika !== false && biz.rubika && biz.rubika !== 'CHANGE_ME') items.push({ kind: 'rubika', href: biz.rubika.indexOf('http') === 0 ? biz.rubika : 'https://rubika.ir/' + biz.rubika, label: 'روبیکا' });
+      kinds.forEach(function (kind) {
+        if (en[kind] === false) return;
+        var href = channelHref(kind, biz[kind]);
+        if (!href) return;
+        var label = kind === 'phone' ? biz.phone : (CH_LABEL_FA[kind] || kind);
+        items.push({ kind: kind, href: href, label: label });
+      });
       if (!items.length) return; // keep static fallback content
       box.innerHTML = '';
       items.forEach(function (it) {
         var a = document.createElement('a');
         a.href = it.href;
-        if (it.href.indexOf('tel:') !== 0) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+        if (it.href.indexOf('tel:') !== 0 && it.href.indexOf('mailto:') !== 0) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
         var img = document.createElement('img');
         img.src = CH_ICON[it.kind] || CH_ICON.phone;
         img.alt = it.label;

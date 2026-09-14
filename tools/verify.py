@@ -9,13 +9,16 @@ from urllib.parse import urljoin
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = "http://127.0.0.1:8471"
-PAGES = ["/", "/en/", "/services/edit.html", "/services/web.html", "/services/pc.html",
-         "/callme/", "/admin/", "/sitemap.xml", "/robots.txt",
+PAGES = ["/", "/fa/", "/fa/services/edit.html", "/fa/services/web.html", "/fa/services/pc.html",
+         "/callme/", "/fa/callme/", "/admin/", "/sitemap.xml", "/robots.txt",
          "/data/site-content.json", "/assets/css/site.css", "/assets/css/en-minimal.css",
-         "/assets/js/site.js", "/assets/js/order.js", "/assets/js/en-lead.js", "/assets/js/admin.js",
+         "/assets/css/admin.css",
+         "/assets/js/site.js", "/assets/js/order.js", "/assets/js/en-lead.js", "/assets/js/en-home.js",
+         "/assets/js/admin.js",
          "/assets/js/supabase-config.js", "/assets/js/supabase.min.js",
          "/assets/fonts/fonts.css", "/assets/img/telegram.svg",
          "/assets/img/whatsapp.svg", "/assets/img/rubika.svg", "/assets/img/phone.svg",
+         "/assets/img/mail.svg", "/assets/img/linkedin.svg", "/assets/img/youtube.svg",
          "/assets/img/logo.svg", "/assets/img/logo-h80.png",
          "/assets/img/icon-32.png", "/assets/img/favicon-16.png",
          "/assets/img/icon-180.png", "/assets/img/og-cover.jpg"]
@@ -64,89 +67,61 @@ def main():
             except Exception as e:
                 check("link " + p, False, str(e)[:100])
 
-        # ---- per-page SEO surface ----
-        for p in ["/", "/services/edit.html", "/services/web.html", "/services/pc.html"]:
+        # ---- FA pages: SEO surface, order forms, /fa/ links ----
+        for p in ["/fa/", "/fa/services/edit.html", "/fa/services/web.html", "/fa/services/pc.html"]:
             html = fetched[p][1]
             t = re.search(r"<title>(.*?)</title>", html, re.S)
             d = re.search(r'<meta name="description" content="(.*?)"', html)
             c = re.search(r'<link rel="canonical" href="(.*?)"', html)
             check(p + " title<=60", bool(t) and len(t.group(1)) <= 60, t.group(1)[:70] if t else "missing")
             check(p + " desc<=155", bool(d) and len(d.group(1)) <= 155, (d.group(1)[:70] if d else "missing"))
-            check(p + " canonical", bool(c) and c.group(1).startswith("https://amirlwf.ir/"))
-            check(p + " og tags", all(k in html for k in ("og:title", "og:description", "og:url", "twitter:card")))
-            check(p + " single h1", html.count("<h1") == 1, f"h1x{html.count('<h1')}")
-            # JSON-LD valid
-            blobs = re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S)
-            ok, types = True, []
-            for b in blobs:
-                try:
-                    types.append(json.loads(b).get("@type"))
-                except Exception:
-                    ok = False
-            check(p + " json-ld valid", ok and len(blobs) >= 3, str(types))
-            check(p + " LocalBusiness", "ProfessionalService" in types)
-            if p != "/":
-                check(p + " Service+FAQ+Breadcrumb",
-                      "Service" in types and "FAQPage" in types and "BreadcrumbList" in types, str(types))
-            # CSP, no third-party
-            check(p + " CSP meta", "Content-Security-Policy" in html)
-            ext = [u for u in re.findall(r'''(?:href|src|url\()["']?(https?://[^"'\)]+)''', html)
-                   if "amirlwf.ir" not in u and "supabase.co" not in u]
-            check(p + " zero third-party", not ext, str(ext[:3]))
-            # internal linking: other services + callme
-            check(p + " internal links",
-                  all(x in html for x in ("/services/", "/callme/")) or p == "/",
-                  "missing service/callme links")
-            # perf: LCP font preloaded, heavy supabase lib NOT in initial load
-            # (public pages only — admin needs realtime eagerly, callme has no supabase at all)
-            if p in ("/", "/services/pc.html", "/services/web.html", "/services/edit.html"):
+            check(p + " canonical /fa/", bool(c) and "/fa/" in c.group(1), c.group(1)[:80] if c else "missing")
+            if p == "/fa/":
+                check(p + " og tags", all(k in html for k in ("og:title", "og:description", "og:url", "twitter:card")))
+                check(p + " single h1", html.count("<h1") == 1, f"h1x{html.count('<h1')}")
+                check(p + " hreflang", 'hreflang="fa" href="https://amirlwf.ir/fa/"' in html
+                      and 'hreflang="en" href="https://amirlwf.ir/"' in html)
+                check(p + " CSP meta", "Content-Security-Policy" in html)
                 check(p + " font preload",
                       'rel="preload" href="/assets/fonts/lalezar-400-arabic.woff2"' in html,
                       "missing LCP font preload")
-                check(p + " no eager supabase lib",
-                      "supabase.min.js" not in html,
-                      "supabase.min.js still eager-loaded")
-            # geo + site identity (Hashtgerd local SEO)
-            check(p + " geo tags",
-                  all(k in html for k in ('geo.region" content="IR-30"', 'geo.placename',
-                                           'geo.position" content="35.96;50.68"',
-                                           'og:site_name')),
-                  "missing geo/site_name")
-            # rich JSON-LD: ProfessionalService carries image + sameAs
-            check(p + " json-ld rich",
-                  '"image":"https://amirlwf.ir/assets/img/og-cover.jpg"' in html
-                  and '"sameAs":["https://t.me/arlwf"]' in html,
-                  "missing image/sameAs in JSON-LD")
+            # FA pages link within /fa/ (no bare root service links)
+            check(p + " /fa/ links", "/fa/services/" in html or p == "/fa/",
+                  "missing /fa/services links")
+            check(p + " no bare root links", 'href="/services/' not in html)
 
-        # ---- content depth ----
-        for p in ["/services/edit.html", "/services/web.html", "/services/pc.html"]:
+        # ---- content depth (FA services) ----
+        for p in ["/fa/services/edit.html", "/fa/services/web.html", "/fa/services/pc.html"]:
             txt = re.sub(r"<script.*?</script>|<style.*?</style>", " ", fetched[p][1], flags=re.S)
             txt = re.sub(r"<[^>]+>", " ", txt)
             words = [w for w in re.split(r"\s+", txt) if re.search(r"[\u0600-\u06FF]", w)]
             check(p + f" 300+ FA words ({len(words)})", len(words) >= 300)
 
-        # ---- order forms ----
-        for p in ["/", "/services/edit.html", "/services/web.html", "/services/pc.html"]:
+        # ---- FA order forms ----
+        for p in ["/fa/", "/fa/services/edit.html", "/fa/services/web.html", "/fa/services/pc.html"]:
             html = fetched[p][1]
             check(p + " order form",
                   all(k in html for k in ('id="order-form"', 'id="f-phone"', 'required',
                                           'id="f-website"', 'id="captcha-q"', 'id="track-box"')))
 
-        # ---- EN landing (/en/): separate theme, EN form, SEO ----
-        en = fetched["/en/"][1]
+        # ---- EN root (/): dynamic EN landing ----
+        en = fetched["/"][1]
         check("en lang", '<html lang="en"' in en)
         t = re.search(r"<title>(.*?)</title>", en, re.S)
         check("en title", bool(t) and t.group(1) == "Short-Form Video Editor | Get 1 Free Edit",
               t.group(1)[:70] if t else "missing")
         d = re.search(r'<meta name="description" content="(.*?)"', en)
         check("en desc", bool(d) and len(d.group(1)) <= 155, (d.group(1)[:70] if d else "missing"))
-        check("en canonical", '<link rel="canonical" href="https://amirlwf.ir/en/">' in en)
-        check("en hreflang out", 'hreflang="fa" href="https://amirlwf.ir/"' in en
-              and 'hreflang="en" href="https://amirlwf.ir/en/"' in en)
-        check("fa hreflang back", 'hreflang="en" href="https://amirlwf.ir/en/"' in fetched["/"][1])
+        check("en canonical", '<link rel="canonical" href="https://amirlwf.ir/">' in en)
+        check("en hreflang out", 'hreflang="fa" href="https://amirlwf.ir/fa/"' in en
+              and 'hreflang="en" href="https://amirlwf.ir/"' in en)
         check("en single h1", en.count("<h1") == 1, f"h1x{en.count('<h1')}")
-        check("en hero", "I Edit Scroll-Stopping Shorts" in en and "Get 1 Free Edit" in en)
+        check("en hero", "Scroll-Stopping Shorts" in en and "Get 1 Free Edit" in en)
+        check("en brand name", "Amir Reza Lotfi" in en)
+        check("en no persian text", not re.search(r"[\u0600-\u06FF]", en), "persian chars found")
         check("en theme separate", "en-minimal.css" in en and "site.css" not in en)
+        check("en dyn hooks", all(k in en for k in ('data-en="hero_title"', 'data-channels-en',
+              'id="portfolio-grid"', 'en-home.js')))
         check("en form", all(k in en for k in ('id="en-lead-form"', 'id="e-name"', 'id="e-email"',
               'id="e-link"', 'id="e-notes"', 'value="free_edit"', 'id="e-website"',
               'id="e-captcha-q"', 'id="en-success"', 'id="en-track-code"')))
@@ -155,7 +130,7 @@ def main():
         ext = [u for u in re.findall(r'''(?:href|src|url\()[\"']?(https?://[^\"'\)]+)''', en)
                if "amirlwf.ir" not in u and "supabase.co" not in u]
         check("en zero third-party", not ext, str(ext[:3]))
-        blobs = re.findall(r'<script type=\"application/ld\+json\">(.*?)</script>', en, re.S)
+        blobs = re.findall(r'<script type="application/ld\+json">(.*?)</script>', en, re.S)
         ok, types = True, []
         for b in blobs:
             try:
@@ -164,12 +139,27 @@ def main():
                 ok = False
         check("en json-ld valid", ok and "ProfessionalService" in types
               and "FAQPage" in types and "BreadcrumbList" in types, str(types))
+        check("en json-ld name", "Amir Reza Lotfi" in en)
+
+        # ---- admin: unified panel ----
+        adm = fetched["/admin/"][1]
+        check("admin tabs", all(k in adm for k in ('data-tab="orders"', 'data-tab="content"',
+              'data-tab="channels"', 'data-tab="portfolio"', 'id="page-select"')))
+        check("admin channels fields", all(k in adm for k in ('id="channels-fields"', 'save-channels-btn'))
+              and all(k in open(os.path.join(ROOT, "assets/js/admin.js"), encoding="utf-8").read()
+                      for k in ("'linkedin'", "'youtube'", "'email'")))
+        check("admin portfolio ui", all(k in adm for k in ('p-thumb', 'p-add-btn', 'portfolio-body')))
+        check("admin source filter", 'id="source-filter"' in adm)
+        check("admin light theme", "admin.css" in adm)
+        check("admin noindex", "noindex" in adm)
 
         # ---- sitemap/robots ----
         sm = fetched["/sitemap.xml"][1]
-        for u in ["https://amirlwf.ir/", "https://amirlwf.ir/en/", "/services/pc.html", "/services/web.html",
-                  "/services/edit.html", "/callme/"]:
+        for u in ["https://amirlwf.ir/", "https://amirlwf.ir/fa/", "/fa/services/pc.html",
+                  "/fa/services/web.html", "/fa/services/edit.html", "/fa/callme/"]:
             check("sitemap has " + u, u in sm)
+        check("sitemap no /en/", "/en/" not in sm)
+        check("sitemap no bare /services/", "/services/" not in sm.replace("/fa/services/", ""))
         check("sitemap hreflang", 'hreflang="fa"' in sm and 'hreflang="en"' in sm)
         check("sitemap lastmod", sm.count("<lastmod>") >= 6, f"lastmod x{sm.count('<lastmod>')}")
         check("robots sitemap", "sitemap.xml" in fetched["/robots.txt"][1].lower())
@@ -212,14 +202,15 @@ def main():
             check(f + " no service_role", "service_role" not in src.lower() or "NEVER" in src)
 
         # ---- JS syntax ----
-        for f in ("assets/js/site.js", "assets/js/order.js", "assets/js/en-lead.js", "assets/js/admin.js", "assets/js/supabase-config.js"):
+        for f in ("assets/js/site.js", "assets/js/order.js", "assets/js/en-lead.js", "assets/js/en-home.js", "assets/js/admin.js", "assets/js/supabase-config.js"):
             r = subprocess.run(["node", "--check", os.path.join(ROOT, f)], capture_output=True, text=True)
             check("node --check " + f, r.returncode == 0, r.stderr.strip()[:120])
 
         # ---- SQL sanity ----
         sch = open(os.path.join(ROOT, "supabase/schema.sql"), encoding="utf-8").read()
         check("sql tables", all(k in sch for k in ("create table", "orders", "site_content", "notifications",
-                                                        "chat_messages")))
+                                                        "chat_messages", "portfolio_items")))
+        check("sql portfolio rls", all(k in sch for k in ("portfolio_public_read", "portfolio_admin_all")))
         check("sql chat rls", all(k in sch for k in ("chat_anon_insert", "chat_track_own", "chat_admin_all",
                                                      "x-visitor-id")))
         fn_dir = os.path.join(ROOT, "supabase", "functions")

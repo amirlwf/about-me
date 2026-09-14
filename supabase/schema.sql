@@ -125,6 +125,10 @@ begin
       alter publication supabase_realtime add table public.notifications;
     exception when duplicate_object then null;
     end;
+    begin
+      alter publication supabase_realtime add table public.portfolio_items;
+    exception when duplicate_object then null;
+    end;
   end if;
 end $$;
 
@@ -137,6 +141,36 @@ drop trigger if exists site_content_touch on public.site_content;
 create trigger site_content_touch
   before update on public.site_content
   for each row execute function public.touch_updated_at();
+
+-- ============================================================
+-- portfolio showcase: admin-managed work samples (EN + FA pages)
+-- public reads visible only; admin full via role flag; uploads go
+-- to the public 'portfolio' storage bucket (see migration file)
+-- ============================================================
+create table if not exists public.portfolio_items (
+  id         bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  page       text not null default 'en' check (page in ('en', 'fa')),
+  title      text not null check (char_length(title) between 2 and 120),
+  caption    text check (caption is null or char_length(caption) <= 500),
+  thumb_url  text,
+  video_url  text,
+  sort       int not null default 0,
+  visible    boolean not null default true
+);
+create index if not exists portfolio_page_idx on public.portfolio_items (page, sort, id);
+
+alter table public.portfolio_items enable row level security;
+
+drop policy if exists portfolio_public_read on public.portfolio_items;
+create policy portfolio_public_read on public.portfolio_items
+  for select to anon using (visible = true);
+
+drop policy if exists portfolio_admin_all on public.portfolio_items;
+create policy portfolio_admin_all on public.portfolio_items
+  for all to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
 
 -- ============================================================
 -- live chat (/callme/): visitor <-> owner via dedicated bot

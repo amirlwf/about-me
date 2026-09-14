@@ -1,85 +1,122 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>پنل مدیریت | امیر</title>
+<title>Admin | Amir Reza Lotfi</title>
 <meta name="robots" content="noindex, nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://ysjdodvtmihaxyioknuo.supabase.co wss://ysjdodvtmihaxyioknuo.supabase.co; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; media-src 'self' https:; connect-src 'self' https://ysjdodvtmihaxyioknuo.supabase.co wss://ysjdodvtmihaxyioknuo.supabase.co; base-uri 'self'; form-action 'self'">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/icon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/icon-180.png">
-<link rel="stylesheet" href="/assets/fonts/fonts.css">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/en-minimal.css">
+<link rel="stylesheet" href="/assets/css/admin.css">
 </head>
 <body>
-<canvas id="star-canvas"></canvas>
-<div class="nebula"></div>
 
-<header class="site-header">
-<div class="wrap nav">
-<a class="brand" href="/"><img class="brand-logo" src="/assets/img/logo-h80.png" alt="لوگوی امیر" width="40" height="40" decoding="async">امیر</a>
+<header class="en-header">
+<div class="wrap">
+<a class="brand" href="/">Amir Reza Lotfi · Admin</a>
 <div class="admin-bar m-0">
-<span id="live-ind" class="pill hidden"><span class="live-dot"></span>متصل زنده</span>
-<button class="btn btn-ghost btn-sm hidden" id="logout-btn">خروج</button>
+<span id="live-ind" class="pill hidden"><span class="live-dot"></span>Live</span>
+<button class="btn btn-ghost btn-sm hidden" id="logout-btn">Logout</button>
 </div>
 </div>
 </header>
 
 <main class="wrap">
 <section class="section" id="login-section">
-<h1>ورود مدیر</h1>
+<h1>Admin login</h1>
 <div class="form-card">
 <form id="login-form">
-<div class="field"><label for="l-email">ایمیل</label><input id="l-email" type="email" dir="ltr" autocomplete="username" required></div>
-<div class="field"><label for="l-pass">رمز عبور</label><input id="l-pass" type="password" dir="ltr" autocomplete="current-password" required></div>
-<button class="btn btn-primary" type="submit">ورود</button>
+<div class="field"><label for="l-email">Email</label><input id="l-email" type="email" dir="ltr" autocomplete="username" required></div>
+<div class="field"><label for="l-pass">Password</label><input id="l-pass" type="password" dir="ltr" autocomplete="current-password" required></div>
+<button class="btn btn-primary" type="submit">Login</button>
 <p class="hint text-danger" id="login-err"></p>
 </form>
 </div>
 </section>
 
 <section class="section hidden" id="panel-section">
-<h1>سفارش‌ها <span class="pill"><span class="live-dot"></span>بدون رفرش</span></h1>
+<div class="tabs" role="tablist" aria-label="Admin sections">
+<button class="tab active" data-tab="orders" role="tab">Orders</button>
+<button class="tab" data-tab="content" role="tab">Page content</button>
+<button class="tab" data-tab="channels" role="tab">Channels</button>
+<button class="tab" data-tab="portfolio" role="tab">Portfolio</button>
+</div>
+
+<div class="tabpane active" id="tab-orders">
+<h1>Orders <span class="pill"><span class="live-dot"></span>No refresh needed</span></h1>
 <div class="admin-bar">
-<label>فیلتر وضعیت:
+<label>Status filter:
 <select id="status-filter">
-<option value="">همه</option>
-<option value="new">جدید</option>
-<option value="in_progress">در حال انجام</option>
-<option value="done">انجام‌شده</option>
+<option value="">All</option>
+<option value="new">New</option>
+<option value="in_progress">In progress</option>
+<option value="done">Done</option>
 </select>
 </label>
-<button class="btn btn-ghost" id="refresh-btn">به‌روزرسانی</button>
-<button class="btn btn-ghost" id="notify-btn">🔕 فعال‌سازی اعلان سفارش</button>
+<label>Source:
+<select id="source-filter">
+<option value="">All</option>
+<option value="fa_site">Persian site</option>
+<option value="en_landing">EN landing</option>
+</select>
+</label>
+<button class="btn btn-ghost" id="refresh-btn">Refresh</button>
+<button class="btn btn-ghost" id="notify-btn">🔕 Enable order alerts</button>
 </div>
 <div class="scroll-x">
 <table class="admin-table" id="orders-table">
-<thead><tr><th>زمان</th><th>نام</th><th>موبایل</th><th>خدمت</th><th>شرح</th><th>وضعیت</th><th>عملیات</th></tr></thead>
-<tbody id="orders-body"><tr><td colspan="7">در حال بارگذاری…</td></tr></tbody>
+<thead><tr><th>Time</th><th>Name</th><th>Contact</th><th>Service</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody id="orders-body"><tr><td colspan="7">Loading…</td></tr></tbody>
 </table>
 </div>
-
-<h2>ویرایش محتوای سایت</h2>
-<p class="hint">مقادیر اینجا در جدول <code dir="ltr">site_content</code> ذخیره و ظرف چند ثانیه روی سایت اعمال می‌شود (بدون نیاز به انتشار مجدد).</p>
-<div class="form-card">
-<div class="field"><label for="c-hours">ساعات کاری</label><input id="c-hours" type="text"></div>
-<div class="field"><label for="c-city">شهر</label><input id="c-city" type="text"></div>
-<button class="btn btn-primary" id="save-content-btn">ذخیره محتوا</button>
 </div>
 
-<h2>کانال‌های ارتباطی</h2>
-<p class="hint">شماره‌ها و آیدی‌ها اینجا ویرایش می‌شود و به‌صورت دکمه در هدر/فوتر سایت نمایش داده می‌شود. هر مورد را می‌توان غیرفعال کرد.</p>
+<div class="tabpane" id="tab-content">
+<h1>Page content</h1>
+<p class="hint">Pick a page, edit its texts, save. Changes apply to the live site within seconds (no redeploy).</p>
+<div class="admin-bar">
+<label>Page:
+<select id="page-select">
+<option value="en">English home (amirlwf.ir/)</option>
+<option value="fa">Persian home (amirlwf.ir/fa/)</option>
+</select>
+</label>
+</div>
+<div id="content-fields"></div>
+<div class="admin-bar"><button class="btn btn-primary" id="save-content-btn">Save page content</button></div>
+</div>
+
+<div class="tabpane" id="tab-channels">
+<h1>Contact channels</h1>
+<p class="hint">Numbers and IDs render as buttons on the site. Toggle each one on/off. Email, Telegram ID, YouTube and LinkedIn included.</p>
+<div class="form-card" id="channels-fields"></div>
+<div class="admin-bar"><button class="btn btn-primary" id="save-channels-btn">Save channels</button></div>
+</div>
+
+<div class="tabpane" id="tab-portfolio">
+<h1>Portfolio</h1>
+<p class="hint">Upload a thumbnail/poster, paste a video link (optional), set title + page. Visible items appear on the site instantly.</p>
 <div class="form-card">
-<div class="field"><label for="ch-phone">شماره موبایل (مثل 09123456789)</label><input id="ch-phone" type="tel" dir="ltr"></div>
-<div class="field"><label><input id="ch-phone-en" type="checkbox" class="w-auto"> نمایش دکمه تماس</label></div>
-<div class="field"><label for="ch-telegram">آیدی تلگرام (بدون @)</label><input id="ch-telegram" type="text" dir="ltr"></div>
-<div class="field"><label><input id="ch-telegram-en" type="checkbox" class="w-auto"> نمایش دکمه تلگرام</label></div>
-<div class="field"><label for="ch-whatsapp">شماره واتساپ (مثل 09123456789)</label><input id="ch-whatsapp" type="tel" dir="ltr"></div>
-<div class="field"><label><input id="ch-whatsapp-en" type="checkbox" class="w-auto"> نمایش دکمه واتساپ</label></div>
-<div class="field"><label for="ch-rubika">آیدی/لینک روبیکا</label><input id="ch-rubika" type="text" dir="ltr"></div>
-<div class="field"><label><input id="ch-rubika-en" type="checkbox" class="w-auto"> نمایش دکمه روبیکا</label></div>
-<button class="btn btn-primary" id="save-channels-btn">ذخیره کانال‌ها</button>
+<div class="field"><label for="p-page">Show on page</label>
+<select id="p-page"><option value="en">English home</option><option value="fa">Persian home</option></select></div>
+<div class="field"><label for="p-title">Title *</label><input id="p-title" type="text" maxlength="120"></div>
+<div class="field"><label for="p-caption">Caption (optional)</label><input id="p-caption" type="text" maxlength="500"></div>
+<div class="field"><label for="p-thumb">Thumbnail image * (upload)</label><input id="p-thumb" type="file" accept="image/*"></div>
+<div class="field"><label for="p-video">Video link (optional)</label><input id="p-video" type="url" dir="ltr" placeholder="https://…"></div>
+<div class="field"><label for="p-sort">Order (lower = first)</label><input id="p-sort" type="number" value="0" dir="ltr"></div>
+<div class="field"><label><input id="p-visible" type="checkbox" class="w-auto" checked> Visible on site</label></div>
+<button class="btn btn-primary" id="p-add-btn">Upload &amp; add</button>
+<p class="hint" id="p-msg"></p>
+</div>
+<div class="scroll-x">
+<table class="admin-table" id="portfolio-table">
+<thead><tr><th>Thumb</th><th>Title</th><th>Page</th><th>Visible</th><th>Actions</th></tr></thead>
+<tbody id="portfolio-body"><tr><td colspan="5">Loading…</td></tr></tbody>
+</table>
+</div>
 </div>
 </section>
 </main>
@@ -87,7 +124,6 @@
 <div id="toast" role="status"></div>
 <script src="/assets/js/supabase-config.js"></script>
 <script src="/assets/js/supabase.min.js"></script>
-<script src="/assets/js/site.js"></script>
 <script src="/assets/js/admin.js"></script>
 </body>
 </html>

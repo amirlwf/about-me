@@ -17,3 +17,4 @@ DEPLO*
 # local tooling (never deploy)
 tools/.lh/
 node_modules/
+supabase/.temp/

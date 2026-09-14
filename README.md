@@ -1,33 +1,35 @@
-# amirlwf.ir — Full Redesign (GitHub Pages + Supabase + Telegram Bot)
+# amirlwf.ir — Amir Reza Lotfi, short-form video editor (GitHub Pages + Supabase + Telegram)
 
-Persian (fa, RTL) personal services site: computer services, web design, video
-editing. Static pages on GitHub Pages, dynamic layer on Supabase, Telegram bot
-via Edge Functions. The original live-chat homepage is preserved untouched at
-`/callme/`.
+English landing at `/` (root), Persian site under `/fa/`. Static pages on
+GitHub Pages, dynamic layer on Supabase, Telegram bot via Edge Functions.
+The original live-chat page is preserved at `/callme/` (and `/fa/callme/`).
 
 ## Site map
 
 | Path | Page |
 |---|---|
-| `/` | Homepage: intro, 3 service cards, CTA, FAQ, order form |
-| `/services/edit.html` | Video editing (+5 sub-service anchors, order form) |
-| `/services/web.html` | Web design (+5 sub-service anchors, order form) |
-| `/services/pc.html` | Computer services (+5 sub-service anchors, order form) |
-| `/callme/` | **Preserved original chat** (moved unchanged, fonts localized) |
-| `/admin/` | Admin panel (Supabase Auth; `noindex`) |
+| `/` | EN home: hero, portfolio, free-edit offer, services, steps, FAQ, lead form |
+| `/fa/` | Persian home: intro, 3 service cards, CTA, FAQ, order form |
+| `/fa/services/edit.html` | Video editing (+5 sub-service anchors, order form) |
+| `/fa/services/web.html` | Web design (+5 sub-service anchors, order form) |
+| `/fa/services/pc.html` | Computer services (+5 sub-service anchors, order form) |
+| `/callme/`, `/fa/callme/` | **Preserved original chat** (fonts localized only) |
+| `/admin/` | Unified admin (orders, EN/FA content, channels, portfolio; `noindex`) |
 | `/data/site-content.json` | Static content defaults (SEO-safe; Supabase overrides at runtime) |
 | `/sitemap.xml`, `/robots.txt` | SEO plumbing |
 
 All assets are local (`assets/fonts|css|js|img`). Zero third-party requests
 except the site's own Supabase project (wired in `assets/js/supabase-config.js`
-— anon key only) and, on `/callme/` only, the pre-existing Google Apps Script
-chat backend.
+— anon key only) plus portfolio images served from the site's own Supabase
+Storage bucket.
 
 ## Setup (5 minutes, all manual — do this after cloning)
 
 ### 1. Supabase project
 1. Create a project at https://supabase.com (free tier).
-2. Dashboard → SQL Editor → run `supabase/schema.sql`, then `supabase/seed.sql`.
+2. Dashboard → SQL Editor → run `supabase/schema.sql`, then `supabase/seed.sql`,
+   then (if upgrading an existing DB) `supabase/migration_en_leads.sql` and
+   `supabase/migration_portfolio.sql` (both idempotent-safe).
 3. Dashboard → Authentication → Users → add your admin user (email + password).
 4. Give it the admin flag (SQL Editor):
    ```sql
