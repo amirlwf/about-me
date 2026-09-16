@@ -28,8 +28,10 @@ Storage bucket.
 ### 1. Supabase project
 1. Create a project at https://supabase.com (free tier).
 2. Dashboard → SQL Editor → run `supabase/schema.sql`, then `supabase/seed.sql`,
-   then (if upgrading an existing DB) `supabase/migration_en_leads.sql` and
-   `supabase/migration_portfolio.sql` (both idempotent-safe).
+   then (if upgrading an existing DB) `supabase/migration_en_leads.sql`,
+   `supabase/migration_portfolio.sql` and `supabase/migration_page_content.sql`
+   (all idempotent-safe: per-page content keys `fa_edit`/`fa_web`/`fa_pc` +
+   `business.page_channels` toggles; never overwrites admin edits).
 3. Dashboard → Authentication → Users → add your admin user (email + password).
 4. Give it the admin flag (SQL Editor):
    ```sql
@@ -92,8 +94,10 @@ domain (`CNAME` already points `amirlwf.ir` — never delete it). No build step.
 - **Admin panel** (`/admin/`): email+password login, orders table fed by
   Realtime (no polling), accept/done buttons write a `notifications` row (which
   is what the customer + bot see), reply box stored as `admin_reply`,
-  `site_content` editor + a dedicated **contact-channels section** (phone /
-  Telegram / WhatsApp / Rubika + per-channel toggles). Changes render on the
+  `site_content` editor (per-page: EN home, FA home, 3 FA service pages, shared
+  business+services; incl. SEO title/description for A/B tests) + a dedicated
+  **contact-channels section with per-page toggles** (phone / Telegram /
+  WhatsApp / Rubika + email/YouTube/LinkedIn; values shared, on/off per page).
   live site within seconds; static defaults keep SEO intact if Supabase is down.
 - **Content model**: `data/site-content.json` = static defaults baked into the
   HTML at author time (crawlable); `site_content` rows override them at runtime

@@ -36,11 +36,13 @@
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://amirlwf.ir/"}]}
 </script>
 </head>
-<body>
+<body data-page="en">
 
 <header class="en-header">
 <div class="wrap">
 <a class="brand" href="/" data-en="brand_name">Amir Reza Lotfi</a>
+<input type="checkbox" id="en-menu-toggle" class="en-menu-toggle">
+<label for="en-menu-toggle" class="en-menu-btn" aria-label="Open menu">☰</label>
 <nav class="en-nav">
 <a href="#work">Work</a>
 <a href="#offer">Free Edit</a>
@@ -59,7 +61,7 @@
 <a class="btn btn-ghost" href="#work" data-en="hero_cta_secondary">See Samples</a>
 </div>
 <p class="micro reveal" data-en="hero_micro">First reel FREE · 48-hour delivery · No commitment</p>
-<div class="channel-row reveal" data-channels-en aria-label="Contact channels"></div>
+<div class="channel-row reveal" data-channels-en data-page-channels="en" aria-label="Contact channels"></div>
 </section>
 
 <section class="section wrap" id="work" aria-label="Samples">
@@ -165,8 +167,8 @@
 
 <footer class="en-footer">
 <div class="wrap">
-<span>© 2026 <span data-en="brand_name">Amir Reza Lotfi</span> — Short-form video editor.</span>
-<div class="channel-row" data-channels-en></div>
+<span>© 2026 <span data-en="brand_name">Amir Reza Lotfi</span> — <span data-en="footer_tagline">Short-form video editor.</span></span>
+<div class="channel-row" data-channels-en data-page-channels="en"></div>
 </div>
 </footer>
 

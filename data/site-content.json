@@ -3,7 +3,13 @@
     "name": "امیر | خدمات کامپیوتر، طراحی سایت و ادیت ویدیو",
     "owner": "امیر",
     "city": "هشتگرد",
-    "area_served": ["هشتگرد", "نظرآباد", "ساوجبلاغ", "کرج", "تهران"],
+    "area_served": [
+      "هشتگرد",
+      "نظرآباد",
+      "ساوجبلاغ",
+      "کرج",
+      "تهران"
+    ],
     "hours": "شنبه تا پنجشنبه، ۹ صبح تا ۹ شب",
     "phone": "09000000000",
     "telegram": "CHANGE_ME",
@@ -11,9 +17,59 @@
     "rubika": "CHANGE_ME",
     "channels_enabled": {
       "phone": true,
+      "email": false,
       "telegram": true,
       "whatsapp": true,
-      "rubika": true
+      "rubika": false,
+      "linkedin": false,
+      "youtube": false
+    },
+    "page_channels": {
+      "en": {
+        "phone": false,
+        "email": true,
+        "telegram": true,
+        "whatsapp": true,
+        "rubika": false,
+        "linkedin": true,
+        "youtube": true
+      },
+      "fa": {
+        "phone": true,
+        "email": false,
+        "telegram": true,
+        "whatsapp": true,
+        "rubika": true,
+        "linkedin": false,
+        "youtube": false
+      },
+      "fa_edit": {
+        "phone": true,
+        "email": false,
+        "telegram": true,
+        "whatsapp": true,
+        "rubika": true,
+        "linkedin": false,
+        "youtube": false
+      },
+      "fa_web": {
+        "phone": true,
+        "email": false,
+        "telegram": true,
+        "whatsapp": true,
+        "rubika": true,
+        "linkedin": false,
+        "youtube": false
+      },
+      "fa_pc": {
+        "phone": true,
+        "email": false,
+        "telegram": true,
+        "whatsapp": true,
+        "rubika": true,
+        "linkedin": false,
+        "youtube": false
+      }
     }
   },
   "services": {

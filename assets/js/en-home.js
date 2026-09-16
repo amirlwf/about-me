@@ -42,7 +42,9 @@
   function renderChannels(biz) {
     var boxes = document.querySelectorAll('[data-channels-en]');
     if (!boxes.length) return;
-    var en = (biz && biz.channels_enabled) || {};
+    // per-page scope: business.page_channels.en wins; legacy channels_enabled is fallback
+    var pc = (biz && biz.page_channels) || {};
+    var en = pc.en && typeof pc.en === 'object' ? pc.en : ((biz && biz.channels_enabled) || {});
     var items = [];
     ORDER.forEach(function (kind) {
       if (en[kind] === false) return;
@@ -75,6 +77,16 @@
   function applyEnHome(data) {
     var home = (data && data.en_home) || {};
     var biz = (data && data.business) || {};
+    // SEO runtime: admin-editable title + description (static tags stay crawlable)
+    if (typeof home.seo_title === 'string' && home.seo_title.trim()) {
+      document.title = home.seo_title.trim();
+      setEnMeta('property', 'og:title', home.seo_title.trim());
+    }
+    if (typeof home.seo_description === 'string' && home.seo_description.trim()) {
+      setEnMeta('name', 'description', home.seo_description.trim());
+      setEnMeta('property', 'og:description', home.seo_description.trim());
+      setEnMeta('name', 'twitter:description', home.seo_description.trim());
+    }
     // scalar strings
     document.querySelectorAll('[data-en]').forEach(function (el) {
       var v = getPath(home, el.getAttribute('data-en'));
@@ -127,6 +139,16 @@
       });
     });
     renderChannels(biz);
+  }
+
+  function setEnMeta(attr, name, content) {
+    var el = document.querySelector('meta[' + attr + '="' + name + '"]');
+    if (!el) {
+      el = document.createElement('meta');
+      el.setAttribute(attr, name);
+      document.head.appendChild(el);
+    }
+    el.setAttribute('content', content);
   }
 
   function renderPortfolio(items) {

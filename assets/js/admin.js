@@ -250,6 +250,10 @@
 
   // field schema per page: [key, label, kind] — kind: text | area | list | cards | steps | faq
   var EN_SCHEMA = [
+    ['brand_name', 'Brand name (header + footer)', 'text'],
+    ['footer_tagline', 'Footer tagline', 'text'],
+    ['seo_title', 'SEO title (browser tab + Google, ≤60 chars)', 'text'],
+    ['seo_description', 'SEO description (Google snippet, ≤155 chars)', 'area'],
     ['hero_eyebrow', 'Hero eyebrow', 'text'],
     ['hero_title', 'Hero title', 'text'],
     ['hero_lead', 'Hero subtitle', 'area'],
@@ -279,10 +283,74 @@
     ['form_sub', 'Form subtitle', 'area']
   ];
   var FA_SCHEMA = [
-    ['hero_title', 'Hero title (FA)', 'text'],
-    ['hero_lead', 'Hero subtitle (FA)', 'area'],
-    ['hero_cta_primary', 'Hero button primary (FA)', 'text'],
-    ['hero_cta_secondary', 'Hero button secondary (FA)', 'text']
+    ['seo_title', 'SEO title (browser tab + Google, ≤60 chars)', 'text'],
+    ['seo_description', 'SEO description (Google snippet, ≤155 chars)', 'area'],
+    ['hero_title', 'Hero title (H1)', 'text'],
+    ['hero_lead', 'Hero subtitle', 'area'],
+    ['hero_cta_primary', 'Hero button primary', 'text'],
+    ['hero_cta_secondary', 'Hero button secondary', 'text'],
+    ['card_edit_title', 'Card: video-editing title', 'text'],
+    ['card_edit_text', 'Card: video-editing text', 'area'],
+    ['card_web_title', 'Card: web-design title', 'text'],
+    ['card_web_text', 'Card: web-design text', 'area'],
+    ['card_pc_title', 'Card: computer-services title', 'text'],
+    ['card_pc_text', 'Card: computer-services text', 'area'],
+    ['faq_title', 'FAQ title', 'text'],
+    ['faq', 'FAQ (question | answer per line)', 'faq'],
+    ['form_title', 'Order form title', 'text']
+  ];
+  // service-page schema factory: svc = edit|web|pc (5 sub-services each)
+  function faSvcSchema(svc) {
+    var pre = 'fa_' + svc;
+    void pre;
+    var s = [
+      ['seo_title', 'SEO title (browser tab + Google, ≤60 chars)', 'text'],
+      ['seo_description', 'SEO description (Google snippet, ≤155 chars)', 'area'],
+      ['hero_title', 'Hero title (H1)', 'text'],
+      ['intro_title', 'Intro section title', 'text'],
+      ['price_title', 'Pricing section title', 'text'],
+      ['price_note2', 'Pricing guide paragraph (below the price line)', 'area'],
+      ['subsvc_title', 'Sub-services section title', 'text'],
+      ['subservices', 'Sub-services (title | text per line, order = page order)', 'steps'],
+      ['faq_title', 'FAQ title', 'text'],
+      ['faq', 'FAQ (question | answer per line)', 'faq'],
+      ['more_title', '“Other services” title', 'text'],
+      ['form_title', 'Order form title', 'text']
+    ];
+    for (var i = 0; i < 5; i++) s.push(['cta_' + i, 'Order button #' + (i + 1) + ' text (in page order)', 'text']);
+    return s;
+  }
+  var PAGE_DEFS = {
+    en:      { key: 'en_home', schema: EN_SCHEMA },
+    fa:      { key: 'fa_home', schema: FA_SCHEMA },
+    fa_edit: { key: 'fa_edit', schema: null },
+    fa_web:  { key: 'fa_web',  schema: null },
+    fa_pc:   { key: 'fa_pc',   schema: null },
+    shared:  { key: null, schema: null } // business + services catalog
+  };
+  PAGE_DEFS.fa_edit.schema = faSvcSchema('edit');
+  PAGE_DEFS.fa_web.schema = faSvcSchema('web');
+  PAGE_DEFS.fa_pc.schema = faSvcSchema('pc');
+  var SHARED_SCHEMA = [
+    ['__biz__', '— Business info (shared: name, city, hours, area) —', 'sep'],
+    ['business.name', 'Business name', 'text'],
+    ['business.owner', 'Owner name', 'text'],
+    ['business.city', 'City', 'text'],
+    ['business.hours', 'Working hours', 'text'],
+    ['business.area_note', 'Service-area note (FAQ answer)', 'area'],
+    ['__svc__', '— Services catalog (titles, taglines, price lines, sub-service lists) —', 'sep'],
+    ['services.edit.title', 'Edit: title', 'text'],
+    ['services.edit.tagline', 'Edit: tagline (hero lead on edit page)', 'area'],
+    ['services.edit.price_note', 'Edit: price line (cards + price section)', 'area'],
+    ['services.edit.subservices', 'Edit: sub-service names (one per line — also fills order-form dropdown)', 'list'],
+    ['services.web.title', 'Web: title', 'text'],
+    ['services.web.tagline', 'Web: tagline (hero lead on web page)', 'area'],
+    ['services.web.price_note', 'Web: price line (cards + price section)', 'area'],
+    ['services.web.subservices', 'Web: sub-service names (one per line — also fills order-form dropdown)', 'list'],
+    ['services.pc.title', 'PC: title', 'text'],
+    ['services.pc.tagline', 'PC: tagline (hero lead on PC page)', 'area'],
+    ['services.pc.price_note', 'PC: price line (cards + price section)', 'area'],
+    ['services.pc.subservices', 'PC: sub-service names (one per line — also fills order-form dropdown)', 'list']
   ];
 
   function cardsToText(list, mapFn) {
@@ -318,18 +386,78 @@
     return text;
   }
 
+  function currentPage() {
+    return document.getElementById('page-select').value || 'en';
+  }
+  function currentDef() {
+    return PAGE_DEFS[currentPage()] || PAGE_DEFS.en;
+  }
   function currentPageKey() {
-    return document.getElementById('page-select').value === 'fa' ? 'fa_home' : 'en_home';
+    return currentDef().key;
   }
   function currentSchema() {
-    return document.getElementById('page-select').value === 'fa' ? FA_SCHEMA : EN_SCHEMA;
+    return currentDef().schema;
+  }
+  function isShared() {
+    return currentPage() === 'shared';
+  }
+
+  function sharedGet(path) {
+    var parts = path.split('.');
+    var root = parts[0] === 'business' ? (contentCache.business || {}) : (contentCache.services || {});
+    var v = root;
+    for (var i = 1; i < parts.length; i++) {
+      v = (v && v[parts[i]] !== undefined) ? v[parts[i]] : undefined;
+    }
+    return v;
+  }
+  function sharedSet(obj, path, val) {
+    var parts = path.split('.');
+    var rootKey = parts[0];
+    obj[rootKey] = obj[rootKey] || {};
+    var node = obj[rootKey];
+    for (var i = 1; i < parts.length - 1; i++) {
+      node[parts[i]] = node[parts[i]] || {};
+      node = node[parts[i]];
+    }
+    node[parts[parts.length - 1]] = val;
   }
 
   function renderContentFields() {
-    var key = currentPageKey();
-    var data = contentCache[key] || {};
     var box = document.getElementById('content-fields');
     box.innerHTML = '';
+    if (isShared()) {
+      SHARED_SCHEMA.forEach(function (f) {
+        var fkey = f[0], label = f[1], kind = f[2];
+        var wrap = document.createElement('div');
+        if (kind === 'sep') {
+          wrap.className = 'sep-line';
+          wrap.textContent = label;
+          box.appendChild(wrap);
+          return;
+        }
+        wrap.className = 'field';
+        var lab = document.createElement('label');
+        lab.setAttribute('for', 'cf-' + fkey.replace(/\./g, '_'));
+        lab.textContent = label;
+        var input = (kind === 'text') ? document.createElement('input') : document.createElement('textarea');
+        if (kind === 'text') input.type = 'text';
+        else { input.rows = kind === 'area' ? 3 : 6; input.className = 'tall'; }
+        input.id = 'cf-' + fkey.replace(/\./g, '_');
+        input.setAttribute('data-ckey', fkey);
+        input.setAttribute('data-kind', kind);
+        input.setAttribute('data-shared', '1');
+        input.value = fieldToText(fkey, kind, sharedGet(fkey));
+        if (document.body.dir === 'rtl' || /[\u0600-\u06FF]/.test(input.value)) input.dir = 'auto';
+        else if (kind === 'text') input.dir = 'ltr';
+        wrap.appendChild(lab);
+        wrap.appendChild(input);
+        box.appendChild(wrap);
+      });
+      return;
+    }
+    var key = currentPageKey();
+    var data = contentCache[key] || {};
     currentSchema().forEach(function (f) {
       var fkey = f[0], label = f[1], kind = f[2];
       var wrap = document.createElement('div');
@@ -365,6 +493,7 @@
         contentCache[row.key] = v;
       });
       renderContentFields();
+      renderChannelFields();
     });
   }
 
@@ -375,6 +504,26 @@
   }
 
   document.getElementById('save-content-btn').addEventListener('click', function () {
+    if (isShared()) {
+      var staged = { business: Object.assign({}, contentCache.business || {}),
+                     services: JSON.parse(JSON.stringify(contentCache.services || {})) };
+      document.querySelectorAll('#content-fields [data-ckey]').forEach(function (input) {
+        sharedSet(staged, input.getAttribute('data-ckey'),
+          textToField(null, input.getAttribute('data-kind'), input.value));
+      });
+      var biz = staged.business;
+      // keep legacy toggle object intact; strip accidental CHANGE_ME empties is handled in channels tab
+      var p1 = saveKey('business', biz);
+      var p2 = saveKey('services', staged.services);
+      Promise.all([p1, p2]).then(function (rs) {
+        var err = (rs[0] && rs[0].error) || (rs[1] && rs[1].error);
+        if (err) { window.showToast('Error: ' + err.message); return; }
+        contentCache.business = biz;
+        contentCache.services = staged.services;
+        window.showToast('Saved — live on the site within seconds.');
+      });
+      return;
+    }
     var key = currentPageKey();
     var data = Object.assign({}, contentCache[key] || {});
     document.querySelectorAll('#content-fields [data-ckey]').forEach(function (input) {
@@ -387,7 +536,7 @@
     });
   });
 
-  /* ---------- channels ---------- */
+  /* ---------- channels: shared values + per-page toggles ---------- */
   var CHANNELS = [
     ['phone', 'Phone number', 'e.g. 09123456789', 'Show call button'],
     ['email', 'Email address', 'you@example.com', 'Show email button'],
@@ -397,19 +546,42 @@
     ['linkedin', 'LinkedIn', 'profile URL or username', 'Show LinkedIn button'],
     ['rubika', 'Rubika', 'ID or link', 'Show Rubika button']
   ];
+  var CHANNEL_PAGES = ['en', 'fa', 'fa_edit', 'fa_web', 'fa_pc'];
+  var CHANNEL_PAGE_LABEL = {
+    en: 'English home', fa: 'Persian home', fa_edit: 'Video editing page',
+    fa_web: 'Web design page', fa_pc: 'Computer services page'
+  };
+
+  function channelsPage() {
+    var sel = document.getElementById('channels-page-select');
+    return (sel && sel.value) || 'en';
+  }
+  function pageToggles(biz, scope) {
+    var pc = (biz && biz.page_channels) || {};
+    if (pc[scope] && typeof pc[scope] === 'object') return pc[scope];
+    // first run: inherit legacy global toggles so nothing disappears
+    return (biz && biz.channels_enabled) || {};
+  }
 
   function renderChannelFields() {
     var biz = contentCache.business || {};
-    var en = biz.channels_enabled || {};
+    var scope = channelsPage();
+    var en = pageToggles(biz, scope);
     var box = document.getElementById('channels-fields');
+    if (!box) return;
     box.innerHTML = '';
+    var note = document.createElement('p');
+    note.className = 'hint';
+    note.textContent = 'Toggles below apply to: ' + (CHANNEL_PAGE_LABEL[scope] || scope) +
+      '. Values are shared across all pages.';
+    box.appendChild(note);
     CHANNELS.forEach(function (c) {
       var kind = c[0];
       var row = document.createElement('div');
       row.className = 'field';
       var lab = document.createElement('label');
       lab.setAttribute('for', 'chn-' + kind);
-      lab.textContent = c[1];
+      lab.textContent = c[1] + '  (shared value)';
       var input = document.createElement('input');
       input.id = 'chn-' + kind;
       input.type = 'text';
@@ -426,7 +598,7 @@
       cb.checked = en[kind] !== false;
       var clab = document.createElement('label');
       clab.setAttribute('for', 'chn-' + kind + '-en');
-      clab.textContent = c[3];
+      clab.textContent = c[3] + ' — on ' + (CHANNEL_PAGE_LABEL[scope] || scope);
       check.appendChild(cb);
       check.appendChild(clab);
       row.appendChild(lab);
@@ -442,24 +614,43 @@
       var v = res.data.value;
       try { if (typeof v === 'string') v = JSON.parse(v); } catch (e) {}
       contentCache.business = v || {};
+      // one-time migration: copy legacy global toggles into every page scope
+      var biz = contentCache.business;
+      if (!biz.page_channels && biz.channels_enabled) {
+        biz.page_channels = {};
+        CHANNEL_PAGES.forEach(function (p) {
+          biz.page_channels[p] = Object.assign({}, biz.channels_enabled);
+        });
+      }
       renderChannelFields();
     });
   }
 
+  var chSel = document.getElementById('channels-page-select');
+  if (chSel) chSel.addEventListener('change', renderChannelFields);
+
   document.getElementById('save-channels-btn').addEventListener('click', function () {
     var biz = Object.assign({}, contentCache.business || {});
-    biz.channels_enabled = biz.channels_enabled || {};
+    var scope = channelsPage();
+    biz.page_channels = biz.page_channels || {};
+    // ensure every page has an object so the site never falls back unexpectedly
+    CHANNEL_PAGES.forEach(function (p) {
+      if (!biz.page_channels[p] || typeof biz.page_channels[p] !== 'object') {
+        biz.page_channels[p] = Object.assign({}, biz.channels_enabled || {});
+      }
+    });
+    biz.page_channels[scope] = biz.page_channels[scope] || {};
     document.querySelectorAll('#channels-fields [data-ch]').forEach(function (input) {
       var kind = input.getAttribute('data-ch');
       var v = input.value.trim();
       biz[kind] = v || 'CHANGE_ME';
       var cb = document.getElementById('chn-' + kind + '-en');
-      biz.channels_enabled[kind] = !!(cb && cb.checked);
+      biz.page_channels[scope][kind] = !!(cb && cb.checked);
     });
     saveKey('business', biz).then(function (res) {
       if (res.error) { window.showToast('Error: ' + res.error.message); return; }
       contentCache.business = biz;
-      window.showToast('Channels saved — live on the site within seconds.');
+      window.showToast('Channels saved for ' + (CHANNEL_PAGE_LABEL[scope] || scope) + ' — live within seconds.');
     });
   });
 

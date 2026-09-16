@@ -97,6 +97,50 @@ def main():
             words = [w for w in re.split(r"\s+", txt) if re.search(r"[\u0600-\u06FF]", w)]
             check(p + f" 300+ FA words ({len(words)})", len(words) >= 300)
 
+        # ---- per-page content hooks (each page editable separately in admin) ----
+        for p, scope in [("/fa/", "fa"), ("/fa/services/edit.html", "fa_edit"),
+                         ("/fa/services/web.html", "fa_web"),
+                         ("/fa/services/pc.html", "fa_pc")]:
+            html = fetched[p][1]
+            check(p + " data-page=" + scope, 'data-page="%s"' % scope in html)
+            check(p + " page-channels", 'data-page-channels="%s"' % scope in html)
+            check(p + " seo editable", "seo_title" in open(
+                  os.path.join(ROOT, "assets/js/admin.js"), encoding="utf-8").read()
+                  and "seo_description" in open(
+                  os.path.join(ROOT, "supabase/seed.sql"), encoding="utf-8").read()
+                  and "applySeo" in open(
+                  os.path.join(ROOT, "assets/js/site.js"), encoding="utf-8").read())
+        eff = fetched["/fa/services/edit.html"][1]
+        check("fa_edit subsvc list hook", 'data-sc-list="fa_edit.subservices"' in eff)
+        check("fa_edit faq list hook", 'data-sc-list="fa_edit.faq"' in eff)
+        check("fa hero hooks", 'data-sc="fa_home.hero_title"' in fetched["/fa/"][1]
+              and 'data-sc-list="fa_home.faq"' in fetched["/fa/"][1])
+        check("en page scope", 'data-page="en"' in fetched["/"][1]
+              and 'data-page-channels="en"' in fetched["/"][1]
+              and 'data-en="footer_tagline"' in fetched["/"][1])
+        check("en hamburger", 'id="en-menu-toggle"' in fetched["/"][1]
+              and ".en-menu-btn" in open(os.path.join(ROOT, "assets/css/en-minimal.css"),
+                                        encoding="utf-8").read())
+        check("site.js per-page logic",
+              all(k in open(os.path.join(ROOT, "assets/js/site.js"), encoding="utf-8").read()
+                  for k in ("page_channels", "data-sc-list", "applySeo", "setMeta")))
+        check("en-home per-page logic",
+              all(k in open(os.path.join(ROOT, "assets/js/en-home.js"), encoding="utf-8").read()
+                  for k in ("page_channels", "seo_title", "setEnMeta")))
+        check("seed page keys",
+              all(k in open(os.path.join(ROOT, "supabase/seed.sql"), encoding="utf-8").read()
+                  for k in ("'fa_edit'", "'fa_web'", "'fa_pc'", "page_channels")))
+        check("migration page content",
+              os.path.isfile(os.path.join(ROOT, "supabase", "migration_page_content.sql")))
+        try:
+            sc = json.loads(fetched["/data/site-content.json"][1])
+            check("content json page_channels",
+                  "page_channels" in sc.get("business", {})
+                  and all(k in sc["business"]["page_channels"]
+                          for k in ("en", "fa", "fa_edit", "fa_web", "fa_pc")))
+        except Exception as e:
+            check("content json page_channels", False, str(e)[:80])
+
         # ---- FA order forms ----
         for p in ["/fa/", "/fa/services/edit.html", "/fa/services/web.html", "/fa/services/pc.html"]:
             html = fetched[p][1]
@@ -149,10 +193,14 @@ def main():
         # ---- admin: unified panel ----
         adm = fetched["/admin/"][1]
         check("admin tabs", all(k in adm for k in ('data-tab="orders"', 'data-tab="content"',
-              'data-tab="channels"', 'data-tab="portfolio"', 'id="page-select"')))
+              'data-tab="channels"', 'data-tab="portfolio"', 'id="page-select"',
+              'id="channels-page-select"', 'value="fa_edit"', 'value="fa_web"',
+              'value="fa_pc"', 'value="shared"')))
         check("admin channels fields", all(k in adm for k in ('id="channels-fields"', 'save-channels-btn'))
               and all(k in open(os.path.join(ROOT, "assets/js/admin.js"), encoding="utf-8").read()
-                      for k in ("'linkedin'", "'youtube'", "'email'", "'splash_title'")))
+                      for k in ("'linkedin'", "'youtube'", "'email'", "'splash_title'",
+                                "page_channels", "channels-page-select", "faSvcSchema",
+                                "PAGE_DEFS", "SHARED_SCHEMA")))
         check("admin portfolio ui", all(k in adm for k in ('p-thumb', 'p-add-btn', 'portfolio-body')))
         check("admin source filter", 'id="source-filter"' in adm)
         check("admin light theme", "admin.css" in adm)

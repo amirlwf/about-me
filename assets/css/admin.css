@@ -46,6 +46,13 @@
 .field-row { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 720px) { .field-row { grid-template-columns: 1fr 1fr; } }
 textarea.tall { min-height: 88px; resize: vertical; }
+.sep-line {
+  font-weight: 800; font-size: .85rem; color: var(--muted);
+  border-top: 2px solid var(--line); padding-top: 14px; margin-top: 18px;
+}
+.seo-hint { font-size: .8rem; font-weight: 400; color: var(--muted); display: block; margin-top: 4px; }
+#content-fields .field input, #content-fields .field textarea { font-size: 16px; }
+#content-fields .field label { font-size: .92rem; }
 .check-line { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
 .check-line:last-child { border-bottom: none; }
 .check-line input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }

@@ -1,4 +1,5 @@
-/* Shared site behaviour: stars, toast, dynamic site_content + contact channels.
+/* Shared site behaviour: stars, toast, dynamic site_content + per-page contact
+   channels. Pages declare scope via <body data-page="fa|fa_edit|fa_web|fa_pc">.
    Progressive enhancement — page content is fully static; this only upgrades. */
 (function () {
   'use strict';
@@ -72,16 +73,109 @@
     return path.split('.').reduce(function (o, k) { return (o && o[k] !== undefined) ? o[k] : undefined; }, obj);
   }
 
+  function pageScope() {
+    var b = document.body;
+    return (b && b.getAttribute('data-page')) || 'fa';
+  }
+
   function applyOverrides(data) {
     if (!data || typeof data !== 'object') return;
-    // text overrides: <... data-sc="business.hours">
+    // text overrides: <... data-sc="business.hours"> or <... data-sc="fa_edit.hero_title">
     Array.prototype.forEach.call(document.querySelectorAll('[data-sc]'), function (el) {
       var v = getPath(data, el.getAttribute('data-sc'));
       if (typeof v === 'string' && v && v !== 'CHANGE_ME' && !/^0{5}/.test(v)) el.textContent = v;
     });
+    applySeo(data);
+    renderLists(data);
     renderChannels(getPath(data, 'business') || {});
   }
 
+  /* ---------- SEO runtime: admin-editable title + description per page ----------
+     Static <title>/<meta> stay crawlable; this swaps them live for A/B tests. */
+  function applySeo(data) {
+    var scope = pageScope();
+    var map = { fa: 'fa_home', fa_edit: 'fa_edit', fa_web: 'fa_web', fa_pc: 'fa_pc' };
+    var key = map[scope];
+    if (!key || !data[key]) return;
+    var page = data[key];
+    if (typeof page.seo_title === 'string' && page.seo_title.trim()) {
+      document.title = page.seo_title.trim();
+      setMeta('property', 'og:title', page.seo_title.trim());
+      setMeta('name', 'twitter:title', page.seo_title.trim());
+    }
+    if (typeof page.seo_description === 'string' && page.seo_description.trim()) {
+      setMeta('name', 'description', page.seo_description.trim());
+      setMeta('property', 'og:description', page.seo_description.trim());
+      setMeta('name', 'twitter:description', page.seo_description.trim());
+    }
+  }
+  function setMeta(attr, name, content) {
+    var sel = 'meta[' + attr + '="' + name + '"]';
+    var el = document.querySelector(sel);
+    if (!el) {
+      el = document.createElement('meta');
+      el.setAttribute(attr, name);
+      document.head.appendChild(el);
+    }
+    el.setAttribute('content', content);
+  }
+
+  /* ---------- dynamic lists: data-sc-list="fa_edit.subservices|faq" ----------
+     Static HTML keeps full SEO content; this re-renders only when the admin
+     saved a non-empty override list. Item slots use data-sc-item="title|text|cta|q|a". */
+  function renderLists(data) {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-sc-list]'), function (box) {
+      var path = box.getAttribute('data-sc-list');
+      var list = getPath(data, path);
+      if (!Array.isArray(list) || !list.length) return;
+      if (/(^|\.)faq$/.test(path)) renderFaq(box, list);
+      else if (/subservices$/.test(path)) renderSubservices(box, list, getPath(data, path.split('.')[0]) || {});
+    });
+  }
+
+  function renderFaq(box, list) {
+    box.innerHTML = '';
+    list.forEach(function (it) {
+      if (!it || !it.q) return;
+      var d = document.createElement('details');
+      var s = document.createElement('summary');
+      s.textContent = it.q;
+      var p = document.createElement('p');
+      p.textContent = it.a || '';
+      d.appendChild(s); d.appendChild(p);
+      box.appendChild(d);
+    });
+  }
+
+  function renderSubservices(box, list, pageData) {
+    // per-item CTA overrides live in the same page object as cta_0..N
+    var arts = box.querySelectorAll('article.subsvc');
+    list.forEach(function (it, i) {
+      if (!it) return;
+      var art = arts[i];
+      if (!art) {
+        art = document.createElement('article');
+        art.className = 'subsvc';
+        art.innerHTML = '<h3></h3><p></p><a class="btn btn-primary" href="#order"></a>';
+        box.appendChild(art);
+      }
+      var h3 = art.querySelector('[data-sc-item="title"], h3');
+      var p = art.querySelector('[data-sc-item="text"], p');
+      var cta = art.querySelector('a.btn');
+      if (h3 && it.title) h3.textContent = it.title;
+      if (p && it.text) p.textContent = it.text;
+      if (cta) {
+        var cv = pageData['cta_' + i];
+        if (typeof cv === 'string' && cv) cta.textContent = cv;
+        else if (it.cta) cta.textContent = it.cta;
+      }
+    });
+  }
+
+  /* ---------- per-page channels ----------
+     Priority: business.page_channels.<scope> -> legacy business.channels_enabled.
+     business = shared values (numbers/IDs); page_channels.<scope> = per-page toggles.
+     Containers may pin a scope via data-page-channels; default = <body data-page>. */
   var CH_ICON = { phone: '/assets/img/phone.svg', telegram: '/assets/img/telegram.svg',
     whatsapp: '/assets/img/whatsapp.svg', rubika: '/assets/img/rubika.svg',
     email: '/assets/img/mail.svg', linkedin: '/assets/img/linkedin.svg',
@@ -105,9 +199,16 @@
     return null;
   }
 
+  function togglesFor(biz, scope) {
+    var pc = biz.page_channels || {};
+    if (pc[scope] && typeof pc[scope] === 'object') return pc[scope];
+    return biz.channels_enabled || {};
+  }
+
   function renderChannels(biz) {
     document.querySelectorAll('[data-channels]').forEach(function (box) {
-      var en = biz.channels_enabled || {};
+      var scope = box.getAttribute('data-page-channels') || pageScope();
+      var en = togglesFor(biz, scope);
       var kinds = ['phone', 'telegram', 'whatsapp', 'rubika', 'email', 'linkedin', 'youtube'];
       var items = [];
       kinds.forEach(function (kind) {
