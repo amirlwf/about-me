@@ -2,7 +2,7 @@
 
 English landing at `/` (root), Persian site under `/fa/`. Static pages on
 GitHub Pages, dynamic layer on Supabase, Telegram bot via Edge Functions.
-The original live-chat page is preserved at `/callme/` (and `/fa/callme/`).
+The original live-chat page is preserved at `/callme/` (and `/fa/callme/`) — now also mirrored in the admin panel's **Chat** tab (reply + realtime; Telegram bot replies land in the same thread).
 
 ## Site map
 
@@ -29,9 +29,9 @@ Storage bucket.
 1. Create a project at https://supabase.com (free tier).
 2. Dashboard → SQL Editor → run `supabase/schema.sql`, then `supabase/seed.sql`,
    then (if upgrading an existing DB) `supabase/migration_en_leads.sql`,
-   `supabase/migration_portfolio.sql` and `supabase/migration_page_content.sql`
-   (all idempotent-safe: per-page content keys `fa_edit`/`fa_web`/`fa_pc` +
-   `business.page_channels` toggles; never overwrites admin edits).
+   `supabase/migration_portfolio.sql`, `supabase/migration_page_content.sql`
+   and `supabase/migration_chat.sql` (all idempotent-safe; never overwrites
+   admin edits).
 3. Dashboard → Authentication → Users → add your admin user (email + password).
 4. Give it the admin flag (SQL Editor):
    ```sql
@@ -100,7 +100,10 @@ domain (`CNAME` already points `amirlwf.ir` — never delete it). No build step.
   WhatsApp / Rubika + email/YouTube/LinkedIn; values shared, on/off per page).
   live site within seconds; static defaults keep SEO intact if Supabase is down.
 - **Content model**: `data/site-content.json` = static defaults baked into the
-  HTML at author time (crawlable); `site_content` rows override them at runtime
+  HTML at author time (crawlable); `site_content` rows override them at runtime.
+   For Google specifically: after editing SEO title/description in the admin
+   panel run `python3 tools/bake_seo.py` (local, uses .env) and commit+push —
+   it bakes the new title/description into the static HTML that Google crawls.
   via `data-sc` attributes and the `[data-channels]` container.
 
 ## Security notes

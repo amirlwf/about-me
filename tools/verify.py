@@ -132,6 +132,13 @@ def main():
                   for k in ("'fa_edit'", "'fa_web'", "'fa_pc'", "page_channels")))
         check("migration page content",
               os.path.isfile(os.path.join(ROOT, "supabase", "migration_page_content.sql")))
+        check("migration chat",
+              os.path.isfile(os.path.join(ROOT, "supabase", "migration_chat.sql")))
+        check("bake_seo tool", os.path.isfile(os.path.join(ROOT, "tools", "bake_seo.py")))
+        check("admin chat tab",
+              'data-tab="chat"' in open(os.path.join(ROOT, "admin/index.html"), encoding="utf-8").read()
+              and all(k in open(os.path.join(ROOT, "assets/js/admin.js"), encoding="utf-8").read()
+                      for k in ("loadChat", "subscribeChat", "chat_messages")))
         try:
             sc = json.loads(fetched["/data/site-content.json"][1])
             check("content json page_channels",

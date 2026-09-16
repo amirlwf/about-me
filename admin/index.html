@@ -40,6 +40,7 @@
 <section class="section hidden" id="panel-section">
 <div class="tabs" role="tablist" aria-label="Admin sections">
 <button class="tab active" data-tab="orders" role="tab">Orders</button>
+<button class="tab" data-tab="chat" role="tab">Chat</button>
 <button class="tab" data-tab="content" role="tab">Page content</button>
 <button class="tab" data-tab="channels" role="tab">Channels</button>
 <button class="tab" data-tab="portfolio" role="tab">Portfolio</button>
@@ -71,6 +72,29 @@
 <thead><tr><th>Time</th><th>Name</th><th>Contact</th><th>Service</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody id="orders-body"><tr><td colspan="7">Loading…</td></tr></tbody>
 </table>
+</div>
+</div>
+
+<div class="tabpane" id="tab-chat">
+<h1>Live chat <span class="pill"><span class="live-dot"></span>Realtime</span></h1>
+<p class="hint">Visitor messages from <b>/callme/</b> and <b>/fa/callme/</b>. Reply here — the visitor sees it instantly while on the page, or on their next visit. Telegram bot replies (Reply-to the #chat message) land in the same thread.</p>
+<div class="admin-bar">
+<label>Visitor:
+<select id="chat-visitor"><option value="">All visitors</option></select>
+</label>
+<button class="btn btn-ghost" id="chat-refresh">Refresh</button>
+</div>
+<div class="scroll-x">
+<table class="admin-table" id="chat-table">
+<thead><tr><th>Time</th><th>Visitor</th><th>Message</th><th>Actions</th></tr></thead>
+<tbody id="chat-body"><tr><td colspan="4">Loading…</td></tr></tbody>
+</table>
+</div>
+<div class="form-card hidden" id="chat-reply-box">
+<p class="hint" id="chat-reply-to"></p>
+<div class="field"><label for="chat-reply-text">Reply</label><textarea id="chat-reply-text" rows="2" maxlength="2000"></textarea></div>
+<button class="btn btn-primary" id="chat-send-btn">Send reply</button>
+<p class="hint" id="chat-msg"></p>
 </div>
 </div>
 

@@ -73,6 +73,8 @@
     logoutBtn.classList.remove('hidden');
     loadOrders();
     subscribeOrders();
+    loadChat();
+    subscribeChat();
     loadContent();
     loadChannels();
     loadPortfolio();
@@ -734,4 +736,100 @@
         });
       });
   });
+
+  /* ---------- live chat (chat_messages) ---------- */
+  var chatRows = [];
+  var chatReplyTo = '';
+
+  function loadChat() {
+    client.from('chat_messages').select('*').order('id', { ascending: false }).limit(300)
+      .then(function (res) {
+        var body = document.getElementById('chat-body');
+        if (!body) return;
+        if (res.error) { body.innerHTML = '<tr><td colspan="4">Error: ' + esc(res.error.message) + '</td></tr>'; return; }
+        chatRows = (res.data || []).slice().reverse();
+        renderChat();
+      });
+  }
+
+  function renderChat() {
+    var sel = document.getElementById('chat-visitor');
+    var body = document.getElementById('chat-body');
+    if (!sel || !body) return;
+    var keep = sel.value;
+    var seen = [];
+    chatRows.forEach(function (m) { if (seen.indexOf(m.visitor_id) < 0) seen.push(m.visitor_id); });
+    sel.innerHTML = '<option value="">All visitors</option>' + seen.map(function (v) {
+      return '<option value="' + esc(v) + '">' + esc(v) + '</option>';
+    }).join('');
+    if (keep && seen.indexOf(keep) >= 0) sel.value = keep;
+    var list = chatRows.filter(function (m) { return !sel.value || m.visitor_id === sel.value; });
+    if (!list.length) { body.innerHTML = '<tr><td colspan="4">No chat messages yet.</td></tr>'; return; }
+    body.innerHTML = '';
+    list.forEach(function (m) {
+      var tr = document.createElement('tr');
+      if (m.sender === 'owner') tr.className = 'chat-owner';
+      tr.innerHTML =
+        '<td>' + fmtTime(m.created_at) + '</td>' +
+        '<td>#chat-' + esc(m.visitor_id) + '</td>' +
+        '<td>' + (m.sender === 'owner' ? '<b>You:</b> ' : '') + esc(m.text) + '</td>' +
+        '<td><button class="btn btn-ghost" data-chat-reply="' + esc(m.visitor_id) + '">Reply</button> ' +
+        '<button class="btn btn-ghost text-danger" data-chat-del="' + m.id + '">Del</button></td>';
+      body.appendChild(tr);
+    });
+  }
+
+  function fmtTime(iso) {
+    try { return new Date(iso).toLocaleString(); } catch (e) { return iso || ''; }
+  }
+
+  document.getElementById('chat-visitor').addEventListener('change', renderChat);
+  document.getElementById('chat-refresh').addEventListener('click', loadChat);
+
+  document.getElementById('chat-body').addEventListener('click', function (ev) {
+    var tgt = ev.target;
+    var rep = tgt.getAttribute ? tgt.getAttribute('data-chat-reply') : null;
+    if (rep) {
+      chatReplyTo = rep;
+      document.getElementById('chat-reply-to').textContent = 'Reply to #chat-' + rep;
+      document.getElementById('chat-reply-box').classList.remove('hidden');
+      document.getElementById('chat-reply-text').focus();
+      return;
+    }
+    var del = tgt.getAttribute ? tgt.getAttribute('data-chat-del') : null;
+    if (del) {
+      client.from('chat_messages').delete().eq('id', del).then(function (res) {
+        if (res.error) { showToast('Delete failed: ' + res.error.message); return; }
+        loadChat();
+      });
+    }
+  });
+
+  document.getElementById('chat-send-btn').addEventListener('click', function () {
+    var text = document.getElementById('chat-reply-text').value.trim();
+    if (!text || !chatReplyTo) return;
+    client.from('chat_messages').insert({ visitor_id: chatReplyTo, sender: 'owner', text: text })
+      .then(function (res) {
+        if (res.error) { document.getElementById('chat-msg').textContent = 'Send failed: ' + res.error.message; return; }
+        document.getElementById('chat-reply-text').value = '';
+        document.getElementById('chat-msg').textContent = '';
+        showToast('Reply sent — visitor sees it in seconds.');
+        loadChat();
+      });
+  });
+
+  function subscribeChat() {
+    client.channel('admin-chat')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, function (payload) {
+        var row = payload.new;
+        if (!row) return;
+        chatRows.push(row);
+        renderChat();
+        if (row.sender === 'visitor') {
+          beep();
+          notifyAdmin('New chat message', '#chat-' + row.visitor_id + ': ' + String(row.text || '').slice(0, 80));
+        }
+      })
+      .subscribe();
+  }
 })();
