@@ -161,14 +161,14 @@ supabase functions deploy bot-test --verify-jwt
 then run the SQL (§1–2), create the admin user, fill in the three bots in the
 panel and set the chat webhook. GitHub Pages keeps serving the repo as-is.
 
-## Personal name SEO
+## Personal-name SEO
 
-Every page carries the identity `امیررضا لطفی` / `Amir Reza Lotfi`: page titles,
-`<meta name="author">`, the visible header brand, the FAQ entry
-«امیررضا لطفی کیست؟», hero text and a `Person` JSON-LD (`sameAs`: GitHub) on
-both home pages. Each section keeps its own name variant — the EN funnel for
-LinkedIn clients never renders Persian text, and the Persian section is the
-introduction/brand side.
+Every page carries the owner's name (titles, `<meta name="author">`, the visible
+header brand, an identity FAQ entry, hero text) plus a `Person` JSON-LD with
+`sameAs` (GitHub) on both home pages, so a name query surfaces this site. Each
+section keeps its own language variant — the EN funnel for LinkedIn clients
+never renders Persian text, and the Persian section is the introduction side.
+The literal name is intentionally not written here (README stays name-free).
 
 ## Security notes
 
