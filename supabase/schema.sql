@@ -126,10 +126,14 @@ begin
       alter publication supabase_realtime add table public.notifications;
     exception when duplicate_object then null;
     end;
-    begin
-      alter publication supabase_realtime add table public.portfolio_items;
-    exception when duplicate_object then null;
-    end;
+    -- portfolio_items is created LATER in this file: guard so a fresh
+    -- install does not die with 42P01 (relation does not exist)
+    if to_regclass('public.portfolio_items') is not null then
+      begin
+        alter publication supabase_realtime add table public.portfolio_items;
+      exception when duplicate_object then null;
+      end;
+    end if;
   end if;
 end $$;
 
@@ -172,6 +176,17 @@ create policy portfolio_admin_all on public.portfolio_items
   for all to authenticated
   using (public.is_admin())
   with check (public.is_admin());
+
+-- portfolio_items -> realtime (table exists now; idempotent)
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    begin
+      alter publication supabase_realtime add table public.portfolio_items;
+    exception when duplicate_object then null;
+    end;
+  end if;
+end $$;
 
 -- ============================================================
 -- live chat (/callme/): visitor <-> owner via dedicated bot

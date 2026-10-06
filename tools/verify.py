@@ -386,6 +386,50 @@ def main():
         check("en home Person JSON-LD", '"@type":"Person"' in G("/") and EN_NAME in G("/"))
         check("fa home Person JSON-LD", '"@type":"Person"' in G("/fa/") and FA_NAME in G("/fa/"))
         check("Person sameAs", "github.com/amirlwf" in G("/") and "github.com/amirlwf" in G("/fa/"))
+        html_files_root = []
+        for _b, _d, _f in os.walk(ROOT):
+            if os.sep + ".git" in _b:
+                continue
+            html_files_root += [os.path.join(_b, x) for x in _f if x.endswith(".html")]
+
+        # ================= SETUP / PROJECT REPOINT =================
+        import importlib.util as _ilu
+        _bs_path = os.path.join(ROOT, "tools", "build_setup_all.py")
+        check("build_setup_all tool exists", os.path.isfile(_bs_path))
+        if os.path.isfile(_bs_path):
+            _spec = _ilu.spec_from_file_location("build_setup_all", _bs_path)
+            _mod = _ilu.module_from_spec(_spec)
+            _spec.loader.exec_module(_mod)
+            _fresh = os.path.join(ROOT, "supabase", "setup_all.sql")
+            check("setup_all.sql exists", os.path.isfile(_fresh))
+            if os.path.isfile(_fresh):
+                check("setup_all.sql in sync with sources",
+                      _mod.render() == open(_fresh, encoding="utf-8", newline="").read().replace("\r\n", "\n"))
+        sch_src = open(os.path.join(ROOT, "supabase", "schema.sql"), encoding="utf-8").read()
+        check("schema guards portfolio publication",
+              "to_regclass('public.portfolio_items')" in sch_src
+              and sch_src.count("alter publication supabase_realtime add table public.portfolio_items") == 2)
+        cfg_src = open(os.path.join(ROOT, "assets", "js", "supabase-config.js"), encoding="utf-8").read()
+        m_cfg = re.search(r"SUPABASE_URL:\s*\"https://([a-z0-9]+)\.supabase\.co\"", cfg_src)
+        ref = m_cfg.group(1) if m_cfg else ""
+        check("supabase-config has project ref", bool(ref), cfg_src[:80])
+        m_key = re.search(r"SUPABASE_ANON_KEY:\s*\"([^\"]+)\"", cfg_src)
+        key_ref = ""
+        if m_key:
+            try:
+                _body = m_key.group(1).split(".")[1]
+                _body += "=" * (-len(_body) % 4)
+                key_ref = json.loads(base64.urlsafe_b64decode(_body)).get("ref", "")
+            except Exception:
+                key_ref = ""
+        check("anon key JWT belongs to that project", bool(ref) and key_ref == ref, f"host={ref} key={key_ref}")
+        for path in html_files_root:
+            src = open(path, encoding="utf-8").read()
+            rel = os.path.relpath(path, ROOT)
+            if "connect-src" in src:
+                check(rel + " csp host matches config", ref in src or not ref)
+            check(rel + " no stale project ref", "ysjdodvtmihaxyioknuo" not in src)
+
         HTML_PAGES = ["/", "/fa/", "/fa/services/edit.html", "/fa/services/web.html", "/fa/services/pc.html",
                       "/en/services/edit.html", "/en/services/web.html", "/callme/", "/fa/callme/", "/admin/"]
         for p in HTML_PAGES:

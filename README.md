@@ -32,7 +32,9 @@ Storage bucket.
 
 ### 1. Supabase project
 1. Create a project at https://supabase.com (free tier).
-2. Dashboard → SQL Editor → run `supabase/schema.sql`, then `supabase/seed.sql`,
+2. Dashboard → SQL Editor → **paste `supabase/setup_all.sql`** (one shot:
+   schema + seed + every migration in order + a verification block; regenerate
+   it any time with `python tools/build_setup_all.py`). Or run them singly:
    then `supabase/migration_portfolio.sql` (storage bucket),
    `supabase/migration_page_content.sql`, `supabase/migration_en_service_pages.sql`
    and `supabase/migration_bots.sql`. On an *existing* DB also run
@@ -158,8 +160,14 @@ supabase functions deploy telegram-webhook --no-verify-jwt
 supabase functions deploy bot-test --verify-jwt
 ```
 
-then run the SQL (§1–2), create the admin user, fill in the three bots in the
-panel and set the chat webhook. GitHub Pages keeps serving the repo as-is.
+then paste `supabase/setup_all.sql` in the SQL Editor (it builds the whole
+schema in the right order), create the admin user, fill in the three bots in
+the panel and set the chat webhook. GitHub Pages keeps serving the repo as-is.
+
+> **Gotcha fixed:** an older `schema.sql` added `portfolio_items` to the
+> realtime publication *before* creating the table → `42P01 relation
+> "public.portfolio_items" does not exist`. It is now guarded with
+> `to_regclass()` and re-added after the table exists.
 
 ## Personal-name SEO
 
