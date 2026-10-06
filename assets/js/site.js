@@ -94,7 +94,8 @@
      Static <title>/<meta> stay crawlable; this swaps them live for A/B tests. */
   function applySeo(data) {
     var scope = pageScope();
-    var map = { fa: 'fa_home', fa_edit: 'fa_edit', fa_web: 'fa_web', fa_pc: 'fa_pc' };
+    var map = { fa: 'fa_home', fa_edit: 'fa_edit', fa_web: 'fa_web', fa_pc: 'fa_pc',
+      en_edit: 'en_edit', en_web: 'en_web' };
     var key = map[scope];
     if (!key || !data[key]) return;
     var page = data[key];
@@ -130,6 +131,24 @@
       if (!Array.isArray(list) || !list.length) return;
       if (/(^|\.)faq$/.test(path)) renderFaq(box, list);
       else if (/subservices$/.test(path)) renderSubservices(box, list, getPath(data, path.split('.')[0]) || {});
+      else renderCards(box, list);
+    });
+  }
+
+  // generic icon|title|text list (EN "ships with" grids, FA card grids):
+  // updates the static cards in place so classes, links and reveal stay intact.
+  function renderCards(box, list) {
+    var cards = box.querySelectorAll('article, .step');
+    list.forEach(function (it, i) {
+      if (!it || !it.title) return;
+      var el = cards[i];
+      if (!el) return;
+      var icon = el.querySelector('.icon');
+      var h = el.querySelector('h3');
+      var p = el.querySelector('p');
+      if (icon && it.icon) icon.textContent = it.icon;
+      if (h) h.textContent = it.title;
+      if (p && it.text) p.textContent = it.text;
     });
   }
 
@@ -182,6 +201,13 @@
     youtube: '/assets/img/youtube.svg' };
   var CH_LABEL_FA = { phone: null, telegram: 'تلگرام', whatsapp: 'واتساپ', rubika: 'روبیکا',
     email: 'ایمیل', linkedin: 'لینکدین', youtube: 'یوتیوب' };
+  var CH_LABEL_EN = { phone: null, telegram: 'Telegram', whatsapp: 'WhatsApp', rubika: 'Rubika',
+    email: 'Email', linkedin: 'LinkedIn', youtube: 'YouTube' };
+  // English pages get English chip labels (same markup, data-driven)
+  function channelLabels() {
+    var lang = (document.documentElement.getAttribute('lang') || '').toLowerCase();
+    return lang.indexOf('en') === 0 ? CH_LABEL_EN : CH_LABEL_FA;
+  }
 
   function channelHref(kind, val) {
     val = String(val || '').trim();
@@ -206,6 +232,7 @@
   }
 
   function renderChannels(biz) {
+    var labels = channelLabels();
     document.querySelectorAll('[data-channels]').forEach(function (box) {
       var scope = box.getAttribute('data-page-channels') || pageScope();
       var en = togglesFor(biz, scope);
@@ -215,7 +242,7 @@
         if (en[kind] === false) return;
         var href = channelHref(kind, biz[kind]);
         if (!href) return;
-        var label = kind === 'phone' ? biz.phone : (CH_LABEL_FA[kind] || kind);
+        var label = kind === 'phone' ? biz.phone : (labels[kind] || kind);
         items.push({ kind: kind, href: href, label: label });
       });
       if (!items.length) return; // keep static fallback content
@@ -223,6 +250,7 @@
       items.forEach(function (it) {
         var a = document.createElement('a');
         a.href = it.href;
+        if (box.classList.contains('channel-row')) a.className = 'channel-chip';
         if (it.href.indexOf('tel:') !== 0 && it.href.indexOf('mailto:') !== 0) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
         var img = document.createElement('img');
         img.src = CH_ICON[it.kind] || CH_ICON.phone;
@@ -254,7 +282,11 @@
   function loadContent() {
     var cfg = window.SITE_CONFIG || {};
     function withRemote(staticData) {
-      if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || !window.fetch) { mergeAndApply(staticData, []); return; }
+      // upgrade immediately from the static defaults, then again with the
+      // remote overrides when they land — a slow or unreachable Supabase
+      // must never delay (or hide) the page's dynamic layer
+      mergeAndApply(staticData, []);
+      if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || !window.fetch) return;
       fetch(cfg.SUPABASE_URL + '/rest/v1/site_content?select=key,value', {
         headers: { apikey: cfg.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + cfg.SUPABASE_ANON_KEY }
       }).then(function (r) { return r.ok ? r.json() : []; })
@@ -269,5 +301,32 @@
     } else { mergeAndApply({}, []); }
   }
 
-  document.addEventListener('DOMContentLoaded', function () { initStars(); loadContent(); });
+  /* ---------- progressive touches: scroll reveal + header shadow ----------
+     Only act when the page actually uses them (EN content pages). */
+  function initReveal() {
+    var els = document.querySelectorAll('.reveal');
+    if (!els.length) return;
+    if (!('IntersectionObserver' in window)) {
+      Array.prototype.forEach.call(els, function (el) { el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(els, function (el) { io.observe(el); });
+  }
+
+  function initChrome() {
+    var header = document.querySelector('.en-header');
+    if (!header) return;
+    function onScroll() { header.classList.toggle('scrolled', window.scrollY > 8); }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    initStars(); initReveal(); initChrome(); loadContent();
+  });
 })();

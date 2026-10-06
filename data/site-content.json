@@ -34,6 +34,24 @@
         "linkedin": true,
         "youtube": true
       },
+      "en_edit": {
+        "phone": false,
+        "email": true,
+        "telegram": true,
+        "whatsapp": true,
+        "rubika": false,
+        "linkedin": true,
+        "youtube": true
+      },
+      "en_web": {
+        "phone": false,
+        "email": true,
+        "telegram": true,
+        "whatsapp": true,
+        "rubika": false,
+        "linkedin": true,
+        "youtube": true
+      },
       "fa": {
         "phone": true,
         "email": false,

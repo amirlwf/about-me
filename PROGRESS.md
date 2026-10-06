@@ -19,3 +19,17 @@
 - [2026-09-14] EN landing /en/ (light minimal theme, free-edit lead form source=en_landing, [EN-FREE] telegram format, hreflang fa/en, sitemap updated, verify ALL CHECKS PASSED)
 - [2026-09-16] Per-page admin: channels toggles split per page (business.page_channels en/fa/fa_edit/fa_web/fa_pc, values shared) + all page texts editable (7 content keys: en_home, fa_home, fa_edit, fa_web, fa_pc + business/services shared incl. SEO title/desc for A/B tests) + mobile polish (FA/EN tap targets, EN hamburger, admin fields); seed+migration_page_content.sql (idempotent) + verify extended, ALL CHECKS PASSED
 - [2026-09-16] Live-chat fix: root cause = chat_messages table never applied to live DB (404 PGRST205; edge fns fine) -> supabase/migration_chat.sql (idempotent). Admin panel: new Chat tab (realtime inbox, per-visitor filter, reply -> owner row -> visitor Realtime, delete; Telegram bot replies same thread). Google-visible SEO: tools/bake_seo.py bakes admin-edited seo_title/seo_description into static HTML <title>/meta/og/twitter (verified: synced og:desc on 3 FA service pages); verify extended, ALL CHECKS PASSED
+- [2026-10-06] EN/FA separation + redesign + Persian admin: new English section
+  /en/services/{edit,web}.html (light theme, hreflang-paired with the FA twins,
+  en-pages.css, lead forms with service=web support), FA pages got hreflang +
+  robots + a language switcher, sitemap rebuilt (7 URLs, x-default alternates),
+  FA home FAQ JSON-LD synced to the visible <details>, /callme/ + /fa/callme/
+  head SEO (canonical -> /fa/callme/, real title/description, og) with bodies
+  untouched; visual polish pass on site.css + en-minimal.css; admin panel fully
+  Persian RTL with a new SEO tab (per-page title/description, Google snippet
+  preview, length table, en_edit/en_web pages) + enSvcSchema/CHANNEL_PAGES;
+  site.js gained en SEO scope, EN channel labels, generic list renderer,
+  reveal/header polish; create-order accepts EN web leads (+ schema.sql RLS +
+  migration_en_web_leads.sql + migration_en_service_pages.sql); bake_seo covers
+  7 pages; verify.py extended (221 checks) ALL CHECKS PASSED + tools/qa_pages.py
+  (CDP 390/1366 overflow, JS errors, broken resources) clean on all pages.

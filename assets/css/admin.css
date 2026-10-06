@@ -68,3 +68,35 @@ textarea.tall { min-height: 88px; resize: vertical; }
   transition: opacity .25s, transform .25s;
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- Persian RTL admin ---------- */
+body { font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif; }
+[dir="rtl"] .admin-table th, [dir="rtl"] .admin-table td { text-align: right; }
+[dir="rtl"] .src-tag { margin-left: 0; margin-right: 6px; }
+[dir="rtl"] .pill .live-dot { margin: 0; }
+[dir="rtl"] .admin-bar label { display: inline-flex; align-items: center; gap: 6px; }
+[dir="rtl"] .check-line { flex-wrap: wrap; }
+[dir="rtl"] .field input[type="text"], [dir="rtl"] .field textarea, [dir="rtl"] #content-fields textarea { direction: auto; }
+[dir="rtl"] .admin-table th { letter-spacing: 0; }
+.admin-credit { margin-top: 26px; padding-top: 14px; border-top: 1px dashed var(--line); text-align: center; }
+.admin-credit a { color: var(--accent); text-decoration: none; }
+
+/* ---------- SEO tab: Google-style snippet preview ---------- */
+.serp {
+  background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px 18px; margin: 6px 0 18px; box-shadow: 0 6px 22px rgba(17,24,39,.06);
+}
+.serp-url { font-size: .82rem; color: #202124; margin-bottom: 4px; }
+.serp-title {
+  font-size: 1.2rem; line-height: 1.3; color: #1a0dab; margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+.serp-desc { font-size: .92rem; color: #4d5156; line-height: 1.55; overflow-wrap: anywhere; }
+.serp .over { color: var(--err); font-weight: 800; }
+#seo-title-count.over, #seo-desc-count.over { color: var(--err); font-weight: 800; }
+#seo-table a { color: var(--accent); text-decoration: none; }
+#seo-table a:hover { text-decoration: underline; }
+
+/* select + inputs breathe in RTL */
+select, input[type="text"], input[type="email"], input[type="password"], input[type="number"], textarea { font-family: inherit; }
+.admin-bar select { min-height: 40px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }

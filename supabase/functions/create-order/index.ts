@@ -81,8 +81,9 @@ Deno.serve(async (req: Request) => {
 
   if (isEN) {
     if (!EMAIL.test(email) || email.length > 160) return bad("invalid email");
-    if (service !== "edit") return bad("invalid service");
-    if (sub !== "" && sub !== "free_edit") return bad("invalid sub_service");
+    // EN leads: video-editing (free edit) OR web-design inquiry
+    if (!["edit", "web"].includes(service)) return bad("invalid service");
+    if (sub !== "" && !/^[a-z0-9_ -]{1,120}$/i.test(sub)) return bad("invalid sub_service");
     if (desc.length < 5 || desc.length > 2000) return bad("invalid description");
     if (rawLink && !/^https?:\/\/\S+\.\S+/.test(rawLink)) return bad("invalid link");
   } else {
@@ -113,7 +114,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const row = isEN
-    ? { name, phone: null, email, service: "edit", sub_service: "free_edit", description: desc,
+    ? { name, phone: null, email, service, sub_service: sub || "free_edit", description: desc,
         raw_link: rawLink || null, track_token: trackToken, source_ip: ip, source: "en_landing", status: "new" }
     : { name, phone, service, sub_service: sub, description: desc, track_token: trackToken, source_ip: ip, status: "new" };
 
@@ -132,9 +133,10 @@ Deno.serve(async (req: Request) => {
   const faChat = Deno.env.get("FA_CHAT_ID") || Deno.env.get("ADMIN_CHAT_ID") || "";
   const enToken = Deno.env.get("EN_BOT_TOKEN") || "";
   const enChat = Deno.env.get("EN_CHAT_ID") || "";
+  const enTag = service === "web" ? "[EN-WEB]" : "[EN-FREE]";
   const msg = isEN
-    ? `🎬 <b>[EN-FREE] New lead #order-${data.id}</b>\n` +
-      `Name: ${esc(name)}\nEmail: <code>${esc(email)}</code>\n` +
+    ? `🎬 <b>${enTag} New lead #order-${data.id}</b>\n` +
+      `Service: ${esc(service)}\nName: ${esc(name)}\nEmail: <code>${esc(email)}</code>\n` +
       (rawLink ? `Footage: ${esc(rawLink)}\n` : "") +
       `Notes: ${esc(desc.slice(0, 500))}`
     : `🧾 <b>سفارش جدید #order-${data.id}</b>\n` +

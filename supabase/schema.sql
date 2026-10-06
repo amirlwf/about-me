@@ -56,7 +56,8 @@ $$ select coalesce((auth.jwt() -> 'user_metadata' ->> 'role'), '') = 'admin' $$;
 -- --- orders ---
 -- anon: INSERT only, with server-side CHECKs (phone format enforced by DB too)
 -- EN branch: source='en_landing' leads carry a valid email + NULL phone,
--- service fixed to edit/free_edit (see migration_en_leads.sql)
+-- service edit (free-edit lead) or web (project inquiry); see
+-- migration_en_leads.sql + migration_en_web_leads.sql
 drop policy if exists orders_anon_insert on public.orders;
 create policy orders_anon_insert on public.orders
   for insert to anon
@@ -66,7 +67,7 @@ create policy orders_anon_insert on public.orders
     and service in ('edit', 'web', 'pc')
     and (
       (source = 'fa_site' and phone ~ '^09[0-9]{9}$')
-      or (source = 'en_landing' and service = 'edit' and phone is null
+      or (source = 'en_landing' and service in ('edit', 'web') and phone is null
           and email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
     )
   );

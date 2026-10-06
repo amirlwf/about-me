@@ -10,9 +10,10 @@ from urllib.parse import urljoin
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = "http://127.0.0.1:8471"
 PAGES = ["/", "/fa/", "/fa/services/edit.html", "/fa/services/web.html", "/fa/services/pc.html",
+         "/en/services/edit.html", "/en/services/web.html",
          "/callme/", "/fa/callme/", "/admin/", "/sitemap.xml", "/robots.txt",
          "/data/site-content.json", "/assets/css/site.css", "/assets/css/en-minimal.css",
-         "/assets/css/admin.css",
+         "/assets/css/en-pages.css", "/assets/css/admin.css",
          "/assets/js/site.js", "/assets/js/order.js", "/assets/js/en-lead.js", "/assets/js/en-home.js",
          "/assets/js/admin.js",
          "/assets/js/supabase-config.js", "/assets/js/supabase.min.js",
@@ -89,6 +90,9 @@ def main():
             check(p + " /fa/ links", "/fa/services/" in html or p == "/fa/",
                   "missing /fa/services links")
             check(p + " no bare root links", 'href="/services/' not in html)
+            check(p + " hreflang", 'hreflang="fa"' in html and "x-default" in html)
+            check(p + " robots meta", 'name="robots" content="index,follow' in html)
+            check(p + " lang switcher", 'class="lang-switch"' in html)
 
         # ---- content depth (FA services) ----
         for p in ["/fa/services/edit.html", "/fa/services/web.html", "/fa/services/pc.html"]:
@@ -134,6 +138,10 @@ def main():
               os.path.isfile(os.path.join(ROOT, "supabase", "migration_page_content.sql")))
         check("migration chat",
               os.path.isfile(os.path.join(ROOT, "supabase", "migration_chat.sql")))
+        check("migration en service pages",
+              os.path.isfile(os.path.join(ROOT, "supabase", "migration_en_service_pages.sql")))
+        check("migration en web leads",
+              os.path.isfile(os.path.join(ROOT, "supabase", "migration_en_web_leads.sql")))
         check("bake_seo tool", os.path.isfile(os.path.join(ROOT, "tools", "bake_seo.py")))
         check("admin chat tab",
               'data-tab="chat"' in open(os.path.join(ROOT, "admin/index.html"), encoding="utf-8").read()
@@ -144,7 +152,8 @@ def main():
             check("content json page_channels",
                   "page_channels" in sc.get("business", {})
                   and all(k in sc["business"]["page_channels"]
-                          for k in ("en", "fa", "fa_edit", "fa_web", "fa_pc")))
+                          for k in ("en", "en_edit", "en_web", "fa",
+                                    "fa_edit", "fa_web", "fa_pc")))
         except Exception as e:
             check("content json page_channels", False, str(e)[:80])
 
@@ -169,7 +178,9 @@ def main():
         check("en single h1", en.count("<h1") == 1, f"h1x{en.count('<h1')}")
         check("en hero", "Scroll-Stopping Shorts" in en and "Get 1 Free Edit" in en)
         check("en brand name", "Amir Reza Lotfi" in en)
-        check("en no persian text", not re.search(r"[\u0600-\u06FF]", en), "persian chars found")
+        en_no_switch = re.sub(r'<a class="lang-switch".*?</a>', " ", en, flags=re.S)
+        check("en no persian text", not re.search(r"[\u0600-\u06FF]", en_no_switch), "persian chars found")
+        check("en lang switcher", 'href="/fa/" hreflang="fa"' in en)
         check("en theme separate", "en-minimal.css" in en and "site.css" not in en)
         check("en dyn hooks", all(k in en for k in ('data-en="hero_title"', 'data-channels-en',
               'id="portfolio-grid"', 'en-home.js')))
@@ -197,6 +208,49 @@ def main():
               and "FAQPage" in types and "BreadcrumbList" in types, str(types))
         check("en json-ld name", "Amir Reza Lotfi" in en)
 
+        # ---- EN service pages (/en/services/*): second language section ----
+        for p in ["/en/services/edit.html", "/en/services/web.html"]:
+            html = fetched[p][1]
+            t_ = re.search(r"<title>(.*?)</title>", html, re.S)
+            d_ = re.search(r'<meta name="description" content="(.*?)"', html)
+            c_ = re.search(r'<link rel="canonical" href="(.*?)"', html)
+            check(p + " lang en", '<html lang="en" dir="ltr">' in html)
+            check(p + " title<=60", bool(t_) and len(t_.group(1)) <= 60, t_.group(1)[:70] if t_ else "missing")
+            check(p + " desc<=155", bool(d_) and len(d_.group(1)) <= 155, d_.group(1)[:70] if d_ else "missing")
+            check(p + " canonical", bool(c_) and c_.group(1) == "https://amirlwf.ir" + p,
+                  c_.group(1) if c_ else "missing")
+            check(p + " hreflang pair", 'hreflang="en"' in html and 'hreflang="fa"' in html
+                  and "x-default" in html)
+            check(p + " robots meta", 'name="robots" content="index,follow' in html)
+            check(p + " single h1", html.count("<h1") == 1, f"h1x{html.count('<h1')}")
+            check(p + " og tags", all(k in html for k in ("og:title", "og:description", "og:url", "twitter:card")))
+            check(p + " csp", "Content-Security-Policy" in html)
+            check(p + " theme", "en-minimal.css" in html and "en-pages.css" in html and "site.css" not in html)
+            check(p + " content hooks", 'data-sc="' in html and 'data-page-channels' in html
+                  and 'data-sc-list' in html)
+            check(p + " lead form", 'id="en-lead-form"' in html and 'id="e-email"' in html
+                  and 'id="f-phone"' not in html)
+            check(p + " lang switcher", 'class="lang-switch"' in html and 'hreflang="fa"' in html)
+            check(p + " site.js", "site.js" in html and "en-lead.js" in html)
+            check(p + " no bare root service links", 'href="/services/' not in html)
+            txt = re.sub(r"<script.*?</script>|<style.*?</style>", " ", html, flags=re.S)
+            txt = re.sub(r"<[^>]+>", " ", txt)
+            words = [w for w in re.split(r"\s+", txt) if re.search(r"[A-Za-z]{3,}", w)]
+            check(p + f" 300+ EN words ({len(words)})", len(words) >= 300)
+            persian = re.sub(r'<a class="lang-switch".*?</a>', " ", html, flags=re.S)
+            check(p + " no persian text", not re.search(r"[\u0600-\u06FF]", persian))
+            blobs = re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S)
+            types, ok = [], True
+            for b in blobs:
+                try: types.append(json.loads(b).get("@type"))
+                except Exception: ok = False
+            check(p + " json-ld", ok and "Service" in types and "FAQPage" in types
+                  and "BreadcrumbList" in types, str(types))
+        check("en section pairing",
+              'hreflang="en" href="https://amirlwf.ir/en/services/edit.html"' in fetched["/fa/services/edit.html"][1]
+              and 'hreflang="fa" href="https://amirlwf.ir/fa/services/edit.html"' in fetched["/en/services/edit.html"][1]
+              and 'hreflang="en" href="https://amirlwf.ir/en/services/web.html"' in fetched["/fa/services/web.html"][1])
+
         # ---- admin: unified panel ----
         adm = fetched["/admin/"][1]
         check("admin tabs", all(k in adm for k in ('data-tab="orders"', 'data-tab="content"',
@@ -212,16 +266,36 @@ def main():
         check("admin source filter", 'id="source-filter"' in adm)
         check("admin light theme", "admin.css" in adm)
         check("admin noindex", "noindex" in adm)
+        admin_js = open(os.path.join(ROOT, "assets/js/admin.js"), encoding="utf-8").read()
+        check("admin persian rtl", '<html lang="fa" dir="rtl">' in adm
+              and "<title>پنل مدیریت" in adm
+              and "ورود ادمین" in adm and "سفارش‌ها" in adm)
+        check("admin seo tab", all(k in adm for k in ('data-tab="seo"', 'id="seo-page-select"',
+              'id="seo-title"', 'id="seo-desc"', 'id="serp"', 'id="seo-save-btn"', 'seo-body')))
+        check("admin seo logic", all(k in admin_js for k in ("SEO_PAGES", "renderSeo",
+              "renderSeoTable", "seoPreview", "serp-title", "faNum")))
+        check("admin covers en service pages", all(k in adm for k in ('value="en_edit"', 'value="en_web"'))
+              and all(k in admin_js for k in ("enSvcSchema", "PAGE_DEFS.en_edit", "PAGE_DEFS.en_web",
+                      "'en_edit: 'صفحه انگلیسی: ادیت ویدیو'".replace("'", '"') if False else "en_edit: 'صفحه انگلیسی")))
+        check("admin no english leftovers", not re.search(
+            r">(Orders|Chat|Page content|Channels|Portfolio|Login|Logout|Refresh|Delete|Reply)<", adm),
+            "english tab labels remain")
 
         # ---- sitemap/robots ----
         sm = fetched["/sitemap.xml"][1]
         for u in ["https://amirlwf.ir/", "https://amirlwf.ir/fa/", "/fa/services/pc.html",
-                  "/fa/services/web.html", "/fa/services/edit.html", "/fa/callme/"]:
+                  "/fa/services/web.html", "/fa/services/edit.html", "/fa/callme/",
+                  "https://amirlwf.ir/en/services/edit.html",
+                  "https://amirlwf.ir/en/services/web.html"]:
             check("sitemap has " + u, u in sm)
-        check("sitemap no /en/", "/en/" not in sm)
-        check("sitemap no bare /services/", "/services/" not in sm.replace("/fa/services/", ""))
-        check("sitemap hreflang", 'hreflang="fa"' in sm and 'hreflang="en"' in sm)
-        check("sitemap lastmod", sm.count("<lastmod>") >= 6, f"lastmod x{sm.count('<lastmod>')}")
+        check("sitemap no bare /en/ redirect", "<loc>https://amirlwf.ir/en/</loc>" not in sm)
+        stripped = sm.replace("/fa/services/", "").replace("/en/services/", "")
+        check("sitemap no bare /services/", "/services/" not in stripped)
+        check("sitemap hreflang", 'hreflang="fa"' in sm and 'hreflang="en"' in sm
+              and 'hreflang="x-default"' in sm)
+        check("sitemap pairs", sm.count('hreflang="en"') == 6 and sm.count('hreflang="fa"') == 8,
+              f"en x{sm.count(chr(34) + 'en' + chr(34))} fa x{sm.count(chr(34) + 'fa' + chr(34))}")
+        check("sitemap lastmod", sm.count("<lastmod>") >= 7, f"lastmod x{sm.count('<lastmod>')}")
         check("robots sitemap", "sitemap.xml" in fetched["/robots.txt"][1].lower())
 
         # ---- site-content.json ----
@@ -288,6 +362,12 @@ def main():
         check("callme realtime logic",
               all(k in fetched["/callme/"][1] for k in ("chat-send", "syncMissed", "subscribeChat",
                                                         "cosmic_chat_visitor", "cosmic_chat_history")))
+        cm = fetched["/callme/"][1]
+        check("callme head seo", '<meta name="description"' in cm
+              and '<link rel="canonical" href="https://amirlwf.ir/fa/callme/">' in cm
+              and "About Me" not in cm)
+        check("fa callme head seo", '<link rel="canonical" href="https://amirlwf.ir/fa/callme/">'
+              in fetched["/fa/callme/"][1])
     finally:
         srv.shutdown()
 

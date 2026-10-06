@@ -15,6 +15,8 @@
   var cfg = window.SITE_CONFIG || {};
   var EMAIL = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
   var LINK = /^https?:\/\/\S+\.\S+/;
+  // which service this page's form is about (home = free edit / edit)
+  var SERVICE = (form.getAttribute('data-service') || 'edit').replace(/[^a-z_]/g, '') || 'edit';
   var captchaA = 2 + Math.floor(Math.random() * 8);
   var captchaB = 1 + Math.floor(Math.random() * 9);
 
@@ -83,8 +85,8 @@
     var payload = {
       name: r.v.name,
       email: r.v.email,
-      service: 'edit',
-      sub_service: 'free_edit',
+      service: SERVICE,
+      sub_service: SERVICE === 'edit' ? 'free_edit' : 'web_inquiry',
       description: r.desc,
       raw_link: r.v.link,
       source: 'en_landing',
@@ -109,8 +111,8 @@
         method: 'POST',
         headers: { apikey: cfg.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + cfg.SUPABASE_ANON_KEY,
           'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify({ name: payload.name, email: payload.email, service: 'edit',
-          sub_service: 'free_edit', description: payload.description, raw_link: payload.raw_link || null,
+        body: JSON.stringify({ name: payload.name, email: payload.email, service: payload.service,
+          sub_service: payload.sub_service, description: payload.description, raw_link: payload.raw_link || null,
           source: 'en_landing', track_token: trackToken, status: 'new' })
       }).then(function (res2) {
         if (!res2.ok) throw new Error('submit failed: ' + res2.status);

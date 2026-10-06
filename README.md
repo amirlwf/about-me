@@ -1,7 +1,10 @@
 # amirlwf.ir — Amir Reza Lotfi, short-form video editor (GitHub Pages + Supabase + Telegram)
 
-English landing at `/` (root), Persian site under `/fa/`. Static pages on
-GitHub Pages, dynamic layer on Supabase, Telegram bot via Edge Functions.
+Two fully separated language sections: English at `/` + `/en/services/*`,
+Persian under `/fa/`. Every paired page cross-links with `hreflang`
+(`en` / `fa` / `x-default`) and the sitemap carries the same alternates.
+Static pages on GitHub Pages, dynamic layer on Supabase, Telegram bot via
+Edge Functions. Admin panel UI is Persian (RTL) with a dedicated SEO tab.
 The original live-chat page is preserved at `/callme/` (and `/fa/callme/`) — now also mirrored in the admin panel's **Chat** tab (reply + realtime; Telegram bot replies land in the same thread).
 
 ## Site map
@@ -9,12 +12,14 @@ The original live-chat page is preserved at `/callme/` (and `/fa/callme/`) — n
 | Path | Page |
 |---|---|
 | `/` | EN home: hero, portfolio, free-edit offer, services, steps, FAQ, lead form |
+| `/en/services/edit.html` | EN: video editing service (paired with `/fa/services/edit.html`) |
+| `/en/services/web.html` | EN: web design service (paired with `/fa/services/web.html`) |
 | `/fa/` | Persian home: intro, 3 service cards, CTA, FAQ, order form |
 | `/fa/services/edit.html` | Video editing (+5 sub-service anchors, order form) |
 | `/fa/services/web.html` | Web design (+5 sub-service anchors, order form) |
 | `/fa/services/pc.html` | Computer services (+5 sub-service anchors, order form) |
 | `/callme/`, `/fa/callme/` | **Preserved original chat** (fonts localized only) |
-| `/admin/` | Unified admin (orders, EN/FA content, channels, portfolio; `noindex`) |
+| `/admin/` | Persian admin panel (orders, live chat, page content, **SEO tab with Google preview**, channels, portfolio; `noindex`) |
 | `/data/site-content.json` | Static content defaults (SEO-safe; Supabase overrides at runtime) |
 | `/sitemap.xml`, `/robots.txt` | SEO plumbing |
 
@@ -29,9 +34,13 @@ Storage bucket.
 1. Create a project at https://supabase.com (free tier).
 2. Dashboard → SQL Editor → run `supabase/schema.sql`, then `supabase/seed.sql`,
    then (if upgrading an existing DB) `supabase/migration_en_leads.sql`,
-   `supabase/migration_portfolio.sql`, `supabase/migration_page_content.sql`
-   and `supabase/migration_chat.sql` (all idempotent-safe; never overwrites
-   admin edits).
+   `supabase/migration_portfolio.sql`, `supabase/migration_page_content.sql`,
+   `supabase/migration_chat.sql`, `supabase/migration_en_service_pages.sql`
+   and `supabase/migration_en_web_leads.sql` (all idempotent-safe; never
+   overwrites admin edits).
+   The last two are required for the English section: they seed the
+   `en_edit` / `en_web` content keys and let EN leads carry `service='web'`
+   (the `create-order` function must be redeployed after them).
 3. Dashboard → Authentication → Users → add your admin user (email + password).
 4. Give it the admin flag (SQL Editor):
    ```sql
@@ -103,7 +112,10 @@ domain (`CNAME` already points `amirlwf.ir` — never delete it). No build step.
   HTML at author time (crawlable); `site_content` rows override them at runtime.
    For Google specifically: after editing SEO title/description in the admin
    panel run `python3 tools/bake_seo.py` (local, uses .env) and commit+push —
-   it bakes the new title/description into the static HTML that Google crawls.
+   it bakes the new title/description into the static HTML that Google crawls
+   (all 7 pages: `/`, `/en/services/*`, `/fa/`, `/fa/services/*`).
+   The admin's **SEO tab** shows a Google-style snippet preview plus a
+   title/description length status table for every page.
   via `data-sc` attributes and the `[data-channels]` container.
 
 ## Security notes
@@ -118,6 +130,7 @@ domain (`CNAME` already points `amirlwf.ir` — never delete it). No build step.
 
 ```bash
 python3 tools/verify.py   # links, SEO surface, JSON-LD, zero-404, secrets scan, SQL sanity
+python3 tools/qa_pages.py # CDP: 390px+1366px overflow, JS errors, broken resources (Chrome :9333)
 ```
 
 ## Manual steps remaining (for the site owner)

@@ -9,7 +9,7 @@
   try {
     client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
   } catch (e) {
-    document.getElementById('login-err').textContent = 'Connection error. Check your internet.';
+    document.getElementById('login-err').textContent = 'خطای اتصال. اینترنت خود را بررسی کنید.';
     return;
   }
 
@@ -52,7 +52,7 @@
     var pass = document.getElementById('l-pass').value;
     client.auth.signInWithPassword({ email: email, password: pass }).then(function (res) {
       if (res.error) {
-        document.getElementById('login-err').textContent = 'Login failed: ' + res.error.message;
+        document.getElementById('login-err').textContent = 'ورود ناموفق: ' + res.error.message;
         return;
       }
       enterPanel();
@@ -81,12 +81,12 @@
   }
 
   /* ---------- orders ---------- */
-  var STATUS = { new: 'New', in_progress: 'In progress', done: 'Done' };
+  var STATUS = { new: 'جدید', in_progress: 'در حال انجام', done: 'انجام شد' };
 
   function loadOrders() {
     client.from('orders').select('*').order('created_at', { ascending: false }).limit(100)
       .then(function (res) {
-        if (res.error) { ordersBody.innerHTML = '<tr><td colspan="7">Error: ' + esc(res.error.message) + '</td></tr>'; return; }
+        if (res.error) { ordersBody.innerHTML = '<tr><td colspan="7">خطا: ' + esc(res.error.message) + '</td></tr>'; return; }
         orders = res.data || [];
         renderOrders();
       });
@@ -106,7 +106,7 @@
     var list = orders.filter(function (o) {
       return (!f || o.status === f) && (!src || (o.source || 'fa_site') === src);
     });
-    if (!list.length) { ordersBody.innerHTML = '<tr><td colspan="7">No orders.</td></tr>'; return; }
+    if (!list.length) { ordersBody.innerHTML = '<tr><td colspan="7">سفارشی وجود ندارد.</td></tr>'; return; }
     ordersBody.innerHTML = '';
     list.forEach(function (o) {
       var tr = document.createElement('tr');
@@ -115,8 +115,8 @@
       var when = isNaN(d) ? '' : d.toLocaleString('en-GB');
       var isEN = (o.source || '') === 'en_landing';
       var desc = esc(o.description) +
-        (o.raw_link ? '<br>Footage: <a href="' + esc(o.raw_link) + '" target="_blank" rel="noopener">link</a>' : '') +
-        (o.admin_reply ? '<br><strong>Your reply:</strong> ' + esc(o.admin_reply) : '');
+        (o.raw_link ? '<br>لینک فایل: <a href="' + esc(o.raw_link) + '" target="_blank" rel="noopener">لینک</a>' : '') +
+        (o.admin_reply ? '<br><strong>پاسخ شما:</strong> ' + esc(o.admin_reply) : '');
       tr.innerHTML =
         '<td>' + esc(when) + '</td>' +
         '<td>' + esc(o.name) + (isEN ? ' <span class="src-tag en">🎬[EN-FREE]</span>' : '') + '</td>' +
@@ -125,10 +125,10 @@
         '<td>' + desc + '</td>' +
         '<td><span class="status-badge status-' + esc(o.status) + '">' + esc(STATUS[o.status] || o.status) + '</span></td>' +
         '<td><div class="admin-bar m-0">' +
-        '<button data-act="accept">✅ Accept</button>' +
-        '<button data-act="done">✔️ Done</button>' +
-        '<button data-act="reply">💬 Reply</button>' +
-        '<button data-act="del">🗑 Delete</button>' +
+        '<button data-act="accept">✅ پذیرش</button>' +
+        '<button data-act="done">✔️ انجام شد</button>' +
+        '<button data-act="reply">💬 پاسخ</button>' +
+        '<button data-act="del">🗑 حذف</button>' +
         '</div></td>';
       ordersBody.appendChild(tr);
     });
@@ -143,29 +143,29 @@
     if (act === 'accept') setStatus(id, 'in_progress');
     else if (act === 'done') setStatus(id, 'done');
     else if (act === 'reply') {
-      var text = window.prompt('Reply to customer (stored in panel + notifications):');
+      var text = window.prompt('پاسخ به مشتری (در پنل و اطلاع‌رسانی ذخیره می‌شود):');
       if (text) setReply(id, text);
     } else if (act === 'del') {
-      if (window.confirm('Delete order #' + id + ' permanently?')) delOrder(id, tr);
+      if (window.confirm('سفارش #' + id + ' برای همیشه حذف شود؟')) delOrder(id, tr);
     }
   });
 
   function delOrder(id, tr) {
     client.from('orders').delete().eq('id', id).then(function (res) {
-      if (res.error) { window.showToast('Error: ' + res.error.message); return; }
+      if (res.error) { window.showToast('خطا: ' + res.error.message); return; }
       try { if (tr && tr.parentNode) tr.parentNode.removeChild(tr); } catch (e) {}
       orders = orders.filter(function (o) { return String(o.id) !== String(id); });
-      window.showToast('Order #' + id + ' deleted.');
+      window.showToast('سفارش #' + id + ' حذف شد.');
       loadOrders();
     });
   }
 
   function setStatus(id, status) {
     client.from('orders').update({ status: status }).eq('id', id).then(function (res) {
-      if (res.error) { window.showToast('Error: ' + res.error.message); return; }
+      if (res.error) { window.showToast('خطا: ' + res.error.message); return; }
       client.from('notifications').insert({ order_id: id, channel: 'site', payload: { status: status } })
         .then(function () {
-          window.showToast(status === 'done' ? 'Order done ✅' : 'Order accepted ✅');
+          window.showToast(status === 'done' ? 'سفارش انجام شد ✅' : 'سفارش پذیرفته شد ✅');
           loadOrders();
         });
     });
@@ -173,8 +173,8 @@
 
   function setReply(id, text) {
     client.from('orders').update({ admin_reply: text }).eq('id', id).then(function (res) {
-      if (res.error) { window.showToast('Error: ' + res.error.message); return; }
-      window.showToast('Reply saved.');
+      if (res.error) { window.showToast('خطا: ' + res.error.message); return; }
+      window.showToast('پاسخ ذخیره شد.');
       loadOrders();
     });
   }
@@ -209,17 +209,17 @@
 
   document.getElementById('notify-btn').addEventListener('click', function () {
     if (!('Notification' in window)) {
-      window.showToast('This browser has no notifications; sound + in-panel message stay on.');
+      window.showToast('این مرورگر اعلان ندارد؛ صدا و پیام داخل پنل فعال می‌ماند.');
       notifyOn = true;
       return;
     }
     Notification.requestPermission().then(function (perm) {
       if (perm === 'granted') {
         notifyOn = true;
-        document.getElementById('notify-btn').textContent = '🔔 Alerts on';
-        window.showToast('New-order alerts on ✅');
+        document.getElementById('notify-btn').textContent = '🔔 اعلان‌ها روشن';
+        window.showToast('اعلان سفارش جدید فعال شد ✅');
       } else {
-        window.showToast('Permission denied; beep stays on.');
+        window.showToast('اجازه داده نشد؛ صدا فعال می‌ماند.');
         notifyOn = true;
       }
     });
@@ -230,9 +230,9 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, function (payload) {
         if (payload.eventType === 'INSERT') {
           orders.unshift(payload.new);
-          var label = '🔔 New order: ' + (payload.new.name || '') + ' — ' + (payload.new.service || '');
+          var label = '🔔 سفارش جدید: ' + (payload.new.name || '') + ' — ' + (payload.new.service || '');
           window.showToast(label);
-          notifyAdmin('New order 🧾', (payload.new.name || '') + ' — ' + (payload.new.service || '') +
+          notifyAdmin('سفارش جدید 🧾', (payload.new.name || '') + ' — ' + (payload.new.service || '') +
             ' — ' + contactOf(payload.new));
           beep();
         } else if (payload.eventType === 'UPDATE') {
@@ -252,107 +252,135 @@
 
   // field schema per page: [key, label, kind] — kind: text | area | list | cards | steps | faq
   var EN_SCHEMA = [
-    ['brand_name', 'Brand name (header + footer)', 'text'],
-    ['footer_tagline', 'Footer tagline', 'text'],
-    ['seo_title', 'SEO title (browser tab + Google, ≤60 chars)', 'text'],
-    ['seo_description', 'SEO description (Google snippet, ≤155 chars)', 'area'],
-    ['hero_eyebrow', 'Hero eyebrow', 'text'],
-    ['hero_title', 'Hero title', 'text'],
-    ['hero_lead', 'Hero subtitle', 'area'],
-    ['hero_cta_primary', 'Hero button (primary)', 'text'],
-    ['hero_cta_secondary', 'Hero button (secondary)', 'text'],
-    ['hero_micro', 'Hero micro-line', 'text'],
-    ['splash_kicker', 'Intro kicker (entry splash)', 'text'],
-    ['splash_title', 'Intro title (entry splash, blank = brand)', 'text'],
-    ['splash_sub', 'Intro subtitle (entry splash)', 'text'],
-    ['splash_cta', 'Intro button (entry splash)', 'text'],
-    ['work_title', 'Work section title', 'text'],
-    ['work_sub', 'Work section subtitle', 'area'],
-    ['offer_title', 'Offer title', 'text'],
-    ['offer_sub', 'Offer subtitle', 'area'],
-    ['offer_points', 'Offer checklist (one per line)', 'list'],
-    ['offer_cta', 'Offer button', 'text'],
-    ['services_title', 'Services title', 'text'],
-    ['services_sub', 'Services subtitle', 'area'],
-    ['services', 'Services (icon | title | text per line)', 'cards'],
-    ['steps_title', 'Steps title', 'text'],
-    ['steps_sub', 'Steps subtitle', 'area'],
-    ['steps', 'Steps (title | text per line)', 'steps'],
-    ['faq_title', 'FAQ title', 'text'],
-    ['faq_sub', 'FAQ subtitle', 'area'],
-    ['faq', 'FAQ (question | answer per line)', 'faq'],
-    ['form_title', 'Form title', 'text'],
-    ['form_sub', 'Form subtitle', 'area']
+    ['brand_name', 'نام برند (هدر و فوتر)', 'text'],
+    ['footer_tagline', 'شعار فوتر', 'text'],
+    ['seo_title', 'عنوان سئو (تیتر تب و گوگل، حداکثر ۶۰ کاراکتر)', 'text'],
+    ['seo_description', 'توضیح سئو (توضیح گوگل، حداکثر ۱۵۵ کاراکتر)', 'area'],
+    ['hero_eyebrow', 'سطر بالای تیتر اصلی', 'text'],
+    ['hero_title', 'تیتر اصلی (H1)', 'text'],
+    ['hero_lead', 'متن زیر تیتر اصلی', 'area'],
+    ['hero_cta_primary', 'دکمه اصلی زیر تیتر', 'text'],
+    ['hero_cta_secondary', 'دکمه فرعی زیر تیتر', 'text'],
+    ['hero_micro', 'خط کوتاه زیر دکمه‌ها', 'text'],
+    ['splash_kicker', 'متن بالای ورود سینمایی', 'text'],
+    ['splash_title', 'تیتر ورود سینمایی (خالی = نام برند)', 'text'],
+    ['splash_sub', 'زیرنویس ورود سینمایی', 'text'],
+    ['splash_cta', 'دکمه ورود سینمایی', 'text'],
+    ['work_title', 'عنوان بخش نمونه‌کارها', 'text'],
+    ['work_sub', 'زیرعنوان بخش نمونه‌کارها', 'area'],
+    ['offer_title', 'عنوان پیشنهاد رایگان', 'text'],
+    ['offer_sub', 'زیرعنوان پیشنهاد رایگان', 'area'],
+    ['offer_points', 'چک‌لیست پیشنهاد (هر خط یک مورد)', 'list'],
+    ['offer_cta', 'دکمه پیشنهاد رایگان', 'text'],
+    ['services_title', 'عنوان بخش خدمات', 'text'],
+    ['services_sub', 'زیرعنوان بخش خدمات', 'area'],
+    ['services', 'خدمات (آیکون | عنوان | متن، هر خط یک مورد)', 'cards'],
+    ['steps_title', 'عنوان مراحل کار', 'text'],
+    ['steps_sub', 'زیرعنوان مراحل کار', 'area'],
+    ['steps', 'مراحل (عنوان | متن، هر خط یک مرحله)', 'steps'],
+    ['faq_title', 'عنوان سوالات پرتکرار', 'text'],
+    ['faq_sub', 'زیرعنوان سوالات پرتکرار', 'area'],
+    ['faq', 'سوالات (سوال | پاسخ، هر خط یک سوال)', 'faq'],
+    ['form_title', 'عنوان فرم', 'text'],
+    ['form_sub', 'زیرعنوان فرم', 'area']
   ];
   var FA_SCHEMA = [
-    ['seo_title', 'SEO title (browser tab + Google, ≤60 chars)', 'text'],
-    ['seo_description', 'SEO description (Google snippet, ≤155 chars)', 'area'],
-    ['hero_title', 'Hero title (H1)', 'text'],
-    ['hero_lead', 'Hero subtitle', 'area'],
-    ['hero_cta_primary', 'Hero button primary', 'text'],
-    ['hero_cta_secondary', 'Hero button secondary', 'text'],
-    ['card_edit_title', 'Card: video-editing title', 'text'],
-    ['card_edit_text', 'Card: video-editing text', 'area'],
-    ['card_web_title', 'Card: web-design title', 'text'],
-    ['card_web_text', 'Card: web-design text', 'area'],
-    ['card_pc_title', 'Card: computer-services title', 'text'],
-    ['card_pc_text', 'Card: computer-services text', 'area'],
-    ['faq_title', 'FAQ title', 'text'],
-    ['faq', 'FAQ (question | answer per line)', 'faq'],
-    ['form_title', 'Order form title', 'text']
+    ['seo_title', 'عنوان سئو (تیتر تب و گوگل، حداکثر ۶۰ کاراکتر)', 'text'],
+    ['seo_description', 'توضیح سئو (توضیح گوگل، حداکثر ۱۵۵ کاراکتر)', 'area'],
+    ['hero_title', 'تیتر اصلی (H1)', 'text'],
+    ['hero_lead', 'متن زیر تیتر اصلی', 'area'],
+    ['hero_cta_primary', 'دکمه اصلی زیر تیتر', 'text'],
+    ['hero_cta_secondary', 'دکمه فرعی زیر تیتر', 'text'],
+    ['card_edit_title', 'کارت ادیت ویدیو: عنوان', 'text'],
+    ['card_edit_text', 'کارت ادیت ویدیو: متن', 'area'],
+    ['card_web_title', 'کارت طراحی سایت: عنوان', 'text'],
+    ['card_web_text', 'کارت طراحی سایت: متن', 'area'],
+    ['card_pc_title', 'کارت خدمات کامپیوتری: عنوان', 'text'],
+    ['card_pc_text', 'کارت خدمات کامپیوتری: متن', 'area'],
+    ['faq_title', 'عنوان سوالات پرتکرار', 'text'],
+    ['faq', 'سوالات (سوال | پاسخ، هر خط یک سوال)', 'faq'],
+    ['form_title', 'عنوان فرم سفارش', 'text']
   ];
   // service-page schema factory: svc = edit|web|pc (5 sub-services each)
   function faSvcSchema(svc) {
     var pre = 'fa_' + svc;
     void pre;
     var s = [
-      ['seo_title', 'SEO title (browser tab + Google, ≤60 chars)', 'text'],
-      ['seo_description', 'SEO description (Google snippet, ≤155 chars)', 'area'],
-      ['hero_title', 'Hero title (H1)', 'text'],
-      ['intro_title', 'Intro section title', 'text'],
-      ['price_title', 'Pricing section title', 'text'],
-      ['price_note2', 'Pricing guide paragraph (below the price line)', 'area'],
-      ['subsvc_title', 'Sub-services section title', 'text'],
-      ['subservices', 'Sub-services (title | text per line, order = page order)', 'steps'],
-      ['faq_title', 'FAQ title', 'text'],
-      ['faq', 'FAQ (question | answer per line)', 'faq'],
-      ['more_title', '“Other services” title', 'text'],
-      ['form_title', 'Order form title', 'text']
+      ['seo_title', 'عنوان سئو (تیتر تب و گوگل، حداکثر ۶۰ کاراکتر)', 'text'],
+      ['seo_description', 'توضیح سئو (توضیح گوگل، حداکثر ۱۵۵ کاراکتر)', 'area'],
+      ['hero_title', 'تیتر اصلی (H1)', 'text'],
+      ['intro_title', 'عنوان بخش مقدمه', 'text'],
+      ['price_title', 'عنوان بخش هزینه‌ها', 'text'],
+      ['price_note2', 'بند راهنمای قیمت (زیر خط قیمت)', 'area'],
+      ['subsvc_title', 'عنوان بخش زیرخدمت‌ها', 'text'],
+      ['subservices', 'زیرخدمت‌ها (عنوان | متن، ترتیب = ترتیب صفحه)', 'steps'],
+      ['faq_title', 'عنوان سوالات پرتکرار', 'text'],
+      ['faq', 'سوالات (سوال | پاسخ، هر خط یک سوال)', 'faq'],
+      ['more_title', 'عنوان «سایر خدمات»', 'text'],
+      ['form_title', 'عنوان فرم سفارش', 'text']
     ];
-    for (var i = 0; i < 5; i++) s.push(['cta_' + i, 'Order button #' + (i + 1) + ' text (in page order)', 'text']);
+    for (var i = 0; i < 5; i++) s.push(['cta_' + i, 'متن دکمه سفارش #' + (i + 1) + ' (به ترتیب صفحه)', 'text']);
+    return s;
+  }
+  // EN service-page schema factory: svc = edit|web (/en/services/*)
+  function enSvcSchema(svc) {
+    void svc;
+    var s = [
+      ['seo_title', 'عنوان سئو (تیتر تب و گوگل، حداکثر ۶۰ کاراکتر)', 'text'],
+      ['seo_description', 'توضیح سئو (توضیح گوگل، حداکثر ۱۵۵ کاراکتر)', 'area'],
+      ['brand_name', 'نام برند (هدر و فوتر)', 'text'],
+      ['footer_tagline', 'شعار فوتر', 'text'],
+      ['eyebrow', 'سطر بالای تیتر اصلی', 'text'],
+      ['hero_title', 'تیتر اصلی (H1)', 'text'],
+      ['hero_lead', 'متن زیر تیتر اصلی', 'area'],
+      ['included_title', 'عنوان بخش «چه چیزی ارائه می‌شود»', 'text'],
+      ['included_sub', 'زیرعنوان آن بخش', 'area'],
+      ['included', 'آیتم‌های شبکه (آیکون | عنوان | متن)', 'cards'],
+      ['offer_title', 'عنوان پیشنهاد رایگان', 'text'],
+      ['offer_sub', 'زیرعنوان پیشنهاد رایگان', 'area'],
+      ['steps_title', 'عنوان مراحل کار', 'text'],
+      ['faq_title', 'عنوان سوالات پرتکرار', 'text'],
+      ['faq', 'سوالات (سوال | پاسخ)', 'faq'],
+      ['related_title', 'عنوان خدمات مرتبط', 'text'],
+      ['form_title', 'عنوان فرم', 'text']
+    ];
     return s;
   }
   var PAGE_DEFS = {
     en:      { key: 'en_home', schema: EN_SCHEMA },
+    en_edit: { key: 'en_edit', schema: null },
+    en_web:  { key: 'en_web',  schema: null },
     fa:      { key: 'fa_home', schema: FA_SCHEMA },
     fa_edit: { key: 'fa_edit', schema: null },
     fa_web:  { key: 'fa_web',  schema: null },
     fa_pc:   { key: 'fa_pc',   schema: null },
     shared:  { key: null, schema: null } // business + services catalog
   };
+  PAGE_DEFS.en_edit.schema = enSvcSchema('edit');
+  PAGE_DEFS.en_web.schema = enSvcSchema('web');
   PAGE_DEFS.fa_edit.schema = faSvcSchema('edit');
   PAGE_DEFS.fa_web.schema = faSvcSchema('web');
   PAGE_DEFS.fa_pc.schema = faSvcSchema('pc');
   var SHARED_SCHEMA = [
-    ['__biz__', '— Business info (shared: name, city, hours, area) —', 'sep'],
-    ['business.name', 'Business name', 'text'],
-    ['business.owner', 'Owner name', 'text'],
-    ['business.city', 'City', 'text'],
-    ['business.hours', 'Working hours', 'text'],
-    ['business.area_note', 'Service-area note (FAQ answer)', 'area'],
-    ['__svc__', '— Services catalog (titles, taglines, price lines, sub-service lists) —', 'sep'],
-    ['services.edit.title', 'Edit: title', 'text'],
-    ['services.edit.tagline', 'Edit: tagline (hero lead on edit page)', 'area'],
-    ['services.edit.price_note', 'Edit: price line (cards + price section)', 'area'],
-    ['services.edit.subservices', 'Edit: sub-service names (one per line — also fills order-form dropdown)', 'list'],
-    ['services.web.title', 'Web: title', 'text'],
-    ['services.web.tagline', 'Web: tagline (hero lead on web page)', 'area'],
-    ['services.web.price_note', 'Web: price line (cards + price section)', 'area'],
-    ['services.web.subservices', 'Web: sub-service names (one per line — also fills order-form dropdown)', 'list'],
-    ['services.pc.title', 'PC: title', 'text'],
-    ['services.pc.tagline', 'PC: tagline (hero lead on PC page)', 'area'],
-    ['services.pc.price_note', 'PC: price line (cards + price section)', 'area'],
-    ['services.pc.subservices', 'PC: sub-service names (one per line — also fills order-form dropdown)', 'list']
+    ['__biz__', '— اطلاعات کسب‌وکار (مشترک: نام، شهر، ساعات، مناطق) —', 'sep'],
+    ['business.name', 'نام کسب‌وکار', 'text'],
+    ['business.owner', 'نام مالک', 'text'],
+    ['business.city', 'شهر', 'text'],
+    ['business.hours', 'ساعات کاری', 'text'],
+    ['business.area_note', 'توضیح مناطق خدمات (پاسخ سوال پرتکرار)', 'area'],
+    ['__svc__', '— کاتالوگ خدمات (عنوان، شعار، خط قیمت، فهرست زیرخدمت‌ها) —', 'sep'],
+    ['services.edit.title', 'ادیت: عنوان', 'text'],
+    ['services.edit.tagline', 'ادیت: شعار (متن زیر تیتر صفحه ادیت)', 'area'],
+    ['services.edit.price_note', 'ادیت: خط قیمت (کارت‌ها و بخش هزینه)', 'area'],
+    ['services.edit.subservices', 'ادیت: نام زیرخدمت‌ها (هر خط یک مورد — فهرست کشویی فرم سفارش را هم پر می‌کند)', 'list'],
+    ['services.web.title', 'طراحی سایت: عنوان', 'text'],
+    ['services.web.tagline', 'طراحی سایت: شعار (متن زیر تیتر صفحه وب)', 'area'],
+    ['services.web.price_note', 'طراحی سایت: خط قیمت (کارت‌ها و بخش هزینه)', 'area'],
+    ['services.web.subservices', 'طراحی سایت: نام زیرخدمت‌ها (هر خط یک مورد — فهرست کشویی فرم سفارش را هم پر می‌کند)', 'list'],
+    ['services.pc.title', 'خدمات کامپیوتری: عنوان', 'text'],
+    ['services.pc.tagline', 'خدمات کامپیوتری: شعار (متن زیر تیتر صفحه)', 'area'],
+    ['services.pc.price_note', 'خدمات کامپیوتری: خط قیمت (کارت‌ها و بخش هزینه)', 'area'],
+    ['services.pc.subservices', 'خدمات کامپیوتری: نام زیرخدمت‌ها (هر خط یک مورد — فهرست کشویی فرم سفارش را هم پر می‌کند)', 'list']
   ];
 
   function cardsToText(list, mapFn) {
@@ -496,6 +524,8 @@
       });
       renderContentFields();
       renderChannelFields();
+      renderSeo();
+      renderSeoTable();
     });
   }
 
@@ -519,10 +549,10 @@
       var p2 = saveKey('services', staged.services);
       Promise.all([p1, p2]).then(function (rs) {
         var err = (rs[0] && rs[0].error) || (rs[1] && rs[1].error);
-        if (err) { window.showToast('Error: ' + err.message); return; }
+        if (err) { window.showToast('خطا: ' + err.message); return; }
         contentCache.business = biz;
         contentCache.services = staged.services;
-        window.showToast('Saved — live on the site within seconds.');
+        window.showToast('ذخیره شد — ظرف چند ثانیه روی سایت اعمال می‌شود.');
       });
       return;
     }
@@ -532,26 +562,27 @@
       data[input.getAttribute('data-ckey')] = textToField(null, input.getAttribute('data-kind'), input.value);
     });
     saveKey(key, data).then(function (res) {
-      if (res.error) { window.showToast('Error: ' + res.error.message); return; }
+      if (res.error) { window.showToast('خطا: ' + res.error.message); return; }
       contentCache[key] = data;
-      window.showToast('Saved — live on the site within seconds.');
+      window.showToast('ذخیره شد — ظرف چند ثانیه روی سایت اعمال می‌شود.');
     });
   });
 
   /* ---------- channels: shared values + per-page toggles ---------- */
   var CHANNELS = [
-    ['phone', 'Phone number', 'e.g. 09123456789', 'Show call button'],
-    ['email', 'Email address', 'you@example.com', 'Show email button'],
-    ['telegram', 'Telegram ID', 'username without @', 'Show Telegram button'],
-    ['whatsapp', 'WhatsApp number', 'e.g. 09123456789', 'Show WhatsApp button'],
-    ['youtube', 'YouTube', 'channel URL or @handle', 'Show YouTube button'],
-    ['linkedin', 'LinkedIn', 'profile URL or username', 'Show LinkedIn button'],
-    ['rubika', 'Rubika', 'ID or link', 'Show Rubika button']
+    ['phone', 'شماره تلفن', 'مثلاً 09123456789', 'نمایش دکمه تماس'],
+    ['email', 'ایمیل', 'you@example.com', 'نمایش دکمه ایمیل'],
+    ['telegram', 'آیدی تلگرام', 'یوزرنیم بدون @', 'نمایش دکمه تلگرام'],
+    ['whatsapp', 'شماره واتساپ', 'مثلاً 09123456789', 'نمایش دکمه واتساپ'],
+    ['youtube', 'یوتیوب', 'لینک کانال یا @handle', 'نمایش دکمه یوتیوب'],
+    ['linkedin', 'لینکدین', 'لینک پروفایل یا یوزرنیم', 'نمایش دکمه لینکدین'],
+    ['rubika', 'روبیکا', 'آیدی یا لینک', 'نمایش دکمه روبیکا']
   ];
-  var CHANNEL_PAGES = ['en', 'fa', 'fa_edit', 'fa_web', 'fa_pc'];
+  var CHANNEL_PAGES = ['en', 'en_edit', 'en_web', 'fa', 'fa_edit', 'fa_web', 'fa_pc'];
   var CHANNEL_PAGE_LABEL = {
-    en: 'English home', fa: 'Persian home', fa_edit: 'Video editing page',
-    fa_web: 'Web design page', fa_pc: 'Computer services page'
+    en: 'صفحه اصلی انگلیسی', fa: 'صفحه اصلی فارسی', fa_edit: 'صفحه ادیت ویدیو',
+    fa_web: 'صفحه طراحی سایت', fa_pc: 'صفحه خدمات کامپیوتری',
+    en_edit: 'صفحه انگلیسی: ادیت ویدیو', en_web: 'صفحه انگلیسی: طراحی سایت'
   };
 
   function channelsPage() {
@@ -574,8 +605,8 @@
     box.innerHTML = '';
     var note = document.createElement('p');
     note.className = 'hint';
-    note.textContent = 'Toggles below apply to: ' + (CHANNEL_PAGE_LABEL[scope] || scope) +
-      '. Values are shared across all pages.';
+    note.textContent = 'کلیدهای زیر برای این صفحه اعمال می‌شوند: ' + (CHANNEL_PAGE_LABEL[scope] || scope) +
+      '. مقادیر (شماره‌ها و آیدی‌ها) بین همه صفحه‌ها مشترک است.';
     box.appendChild(note);
     CHANNELS.forEach(function (c) {
       var kind = c[0];
@@ -583,7 +614,7 @@
       row.className = 'field';
       var lab = document.createElement('label');
       lab.setAttribute('for', 'chn-' + kind);
-      lab.textContent = c[1] + '  (shared value)';
+      lab.textContent = c[1] + '  (مقدار مشترک)';
       var input = document.createElement('input');
       input.id = 'chn-' + kind;
       input.type = 'text';
@@ -600,7 +631,7 @@
       cb.checked = en[kind] !== false;
       var clab = document.createElement('label');
       clab.setAttribute('for', 'chn-' + kind + '-en');
-      clab.textContent = c[3] + ' — on ' + (CHANNEL_PAGE_LABEL[scope] || scope);
+      clab.textContent = c[3] + ' — در ' + (CHANNEL_PAGE_LABEL[scope] || scope);
       check.appendChild(cb);
       check.appendChild(clab);
       row.appendChild(lab);
@@ -650,9 +681,9 @@
       biz.page_channels[scope][kind] = !!(cb && cb.checked);
     });
     saveKey('business', biz).then(function (res) {
-      if (res.error) { window.showToast('Error: ' + res.error.message); return; }
+      if (res.error) { window.showToast('خطا: ' + res.error.message); return; }
       contentCache.business = biz;
-      window.showToast('Channels saved for ' + (CHANNEL_PAGE_LABEL[scope] || scope) + ' — live within seconds.');
+      window.showToast('کانال‌های ' + (CHANNEL_PAGE_LABEL[scope] || scope) + ' ذخیره شد — ظرف چند ثانیه روی سایت اعمال می‌شود.');
     });
   });
 
@@ -662,9 +693,9 @@
   function loadPortfolio() {
     client.from('portfolio_items').select('*').order('sort', { ascending: true }).order('id', { ascending: false }).limit(100)
       .then(function (res) {
-        if (res.error) { portfolioBody.innerHTML = '<tr><td colspan="5">Error: ' + esc(res.error.message) + '</td></tr>'; return; }
+        if (res.error) { portfolioBody.innerHTML = '<tr><td colspan="5">خطا: ' + esc(res.error.message) + '</td></tr>'; return; }
         var list = res.data || [];
-        if (!list.length) { portfolioBody.innerHTML = '<tr><td colspan="5">No portfolio items yet.</td></tr>'; return; }
+        if (!list.length) { portfolioBody.innerHTML = '<tr><td colspan="5">هنوز نمونه‌کاری ثبت نشده است.</td></tr>'; return; }
         portfolioBody.innerHTML = '';
         list.forEach(function (it) {
           var tr = document.createElement('tr');
@@ -672,11 +703,11 @@
           tr.innerHTML =
             '<td>' + (it.thumb_url ? '<img class="thumb-sm" src="' + esc(it.thumb_url) + '" alt="" loading="lazy">' : '—') + '</td>' +
             '<td>' + esc(it.title) + (it.caption ? '<br><small>' + esc(it.caption) + '</small>' : '') + '</td>' +
-            '<td>' + esc(it.page === 'fa' ? 'Persian' : 'English') + '</td>' +
+            '<td>' + esc(it.page === 'fa' ? 'فارسی' : 'انگلیسی') + '</td>' +
             '<td>' + (it.visible
-              ? '<button data-pact="hide">👁 On</button>'
-              : '<button data-pact="show">🚫 Off</button>') + '</td>' +
-            '<td><div class="admin-bar m-0"><button data-pact="del">🗑 Delete</button></div></td>';
+              ? '<button data-pact="hide">👁 نمایش</button>'
+              : '<button data-pact="show">🚫 پنهان</button>') + '</td>' +
+            '<td><div class="admin-bar m-0"><button data-pact="del">🗑 حذف</button></div></td>';
           portfolioBody.appendChild(tr);
         });
       });
@@ -690,13 +721,13 @@
     var act = btn.getAttribute('data-pact');
     if (act === 'hide' || act === 'show') {
       client.from('portfolio_items').update({ visible: act === 'show' }).eq('id', id).then(function (res) {
-        window.showToast(res.error ? 'Error: ' + res.error.message : 'Updated.');
+        window.showToast(res.error ? 'خطا: ' + res.error.message : 'به‌روزرسانی شد.');
         loadPortfolio();
       });
     } else if (act === 'del') {
-      if (!window.confirm('Delete portfolio item #' + id + '?')) return;
+      if (!window.confirm('نمونه‌کار #' + id + ' حذف شود؟')) return;
       client.from('portfolio_items').delete().eq('id', id).then(function (res) {
-        window.showToast(res.error ? 'Error: ' + res.error.message : 'Deleted.');
+        window.showToast(res.error ? 'خطا: ' + res.error.message : 'حذف شد.');
         loadPortfolio();
       });
     }
@@ -711,14 +742,14 @@
     var sort = parseInt(document.getElementById('p-sort').value, 10) || 0;
     var visible = document.getElementById('p-visible').checked;
     var page = document.getElementById('p-page').value;
-    if (title.length < 2) { msg.textContent = 'Title is required.'; return; }
-    if (!file) { msg.textContent = 'Pick a thumbnail image first.'; return; }
-    msg.textContent = 'Uploading…';
+    if (title.length < 2) { msg.textContent = 'عنوان الزامی است.'; return; }
+    if (!file) { msg.textContent = 'اول یک تصویر بندانگشتی انتخاب کنید.'; return; }
+    msg.textContent = 'در حال آپلود…';
     var ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
     var path = page + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
     client.storage.from('portfolio').upload(path, file, { contentType: file.type || 'image/jpeg', upsert: true })
       .then(function (up) {
-        if (up.error) { msg.textContent = 'Upload failed: ' + up.error.message; return; }
+        if (up.error) { msg.textContent = 'آپلود ناموفق: ' + up.error.message; return; }
         var pub = client.storage.from('portfolio').getPublicUrl(path);
         var thumbUrl = (pub.data && pub.data.publicUrl) || '';
         return client.from('portfolio_items').insert({
@@ -726,8 +757,8 @@
           thumb_url: thumbUrl, video_url: video || null,
           sort: sort, visible: visible
         }).then(function (ins) {
-          if (ins.error) { msg.textContent = 'Saved upload but DB failed: ' + ins.error.message; return; }
-          msg.textContent = 'Added ✅ — visible on the site now.';
+          if (ins.error) { msg.textContent = 'فایل آپلود شد ولی ثبت در دیتابیس ناموفق: ' + ins.error.message; return; }
+          msg.textContent = 'اضافه شد ✅ — همین حالا روی سایت نمایش داده می‌شود.';
           document.getElementById('p-title').value = '';
           document.getElementById('p-caption').value = '';
           document.getElementById('p-video').value = '';
@@ -746,7 +777,7 @@
       .then(function (res) {
         var body = document.getElementById('chat-body');
         if (!body) return;
-        if (res.error) { body.innerHTML = '<tr><td colspan="4">Error: ' + esc(res.error.message) + '</td></tr>'; return; }
+        if (res.error) { body.innerHTML = '<tr><td colspan="4">خطا: ' + esc(res.error.message) + '</td></tr>'; return; }
         chatRows = (res.data || []).slice().reverse();
         renderChat();
       });
@@ -759,12 +790,12 @@
     var keep = sel.value;
     var seen = [];
     chatRows.forEach(function (m) { if (seen.indexOf(m.visitor_id) < 0) seen.push(m.visitor_id); });
-    sel.innerHTML = '<option value="">All visitors</option>' + seen.map(function (v) {
+    sel.innerHTML = '<option value="">همه بازدیدکنندگان</option>' + seen.map(function (v) {
       return '<option value="' + esc(v) + '">' + esc(v) + '</option>';
     }).join('');
     if (keep && seen.indexOf(keep) >= 0) sel.value = keep;
     var list = chatRows.filter(function (m) { return !sel.value || m.visitor_id === sel.value; });
-    if (!list.length) { body.innerHTML = '<tr><td colspan="4">No chat messages yet.</td></tr>'; return; }
+    if (!list.length) { body.innerHTML = '<tr><td colspan="4">هنوز پیام چتی نیست.</td></tr>'; return; }
     body.innerHTML = '';
     list.forEach(function (m) {
       var tr = document.createElement('tr');
@@ -772,9 +803,9 @@
       tr.innerHTML =
         '<td>' + fmtTime(m.created_at) + '</td>' +
         '<td>#chat-' + esc(m.visitor_id) + '</td>' +
-        '<td>' + (m.sender === 'owner' ? '<b>You:</b> ' : '') + esc(m.text) + '</td>' +
-        '<td><button class="btn btn-ghost" data-chat-reply="' + esc(m.visitor_id) + '">Reply</button> ' +
-        '<button class="btn btn-ghost text-danger" data-chat-del="' + m.id + '">Del</button></td>';
+        '<td>' + (m.sender === 'owner' ? '<b>شما:</b> ' : '') + esc(m.text) + '</td>' +
+        '<td><button class="btn btn-ghost" data-chat-reply="' + esc(m.visitor_id) + '">پاسخ</button> ' +
+        '<button class="btn btn-ghost text-danger" data-chat-del="' + m.id + '">حذف</button></td>';
       body.appendChild(tr);
     });
   }
@@ -791,7 +822,7 @@
     var rep = tgt.getAttribute ? tgt.getAttribute('data-chat-reply') : null;
     if (rep) {
       chatReplyTo = rep;
-      document.getElementById('chat-reply-to').textContent = 'Reply to #chat-' + rep;
+      document.getElementById('chat-reply-to').textContent = 'پاسخ به #chat-' + rep;
       document.getElementById('chat-reply-box').classList.remove('hidden');
       document.getElementById('chat-reply-text').focus();
       return;
@@ -799,7 +830,7 @@
     var del = tgt.getAttribute ? tgt.getAttribute('data-chat-del') : null;
     if (del) {
       client.from('chat_messages').delete().eq('id', del).then(function (res) {
-        if (res.error) { showToast('Delete failed: ' + res.error.message); return; }
+        if (res.error) { showToast('حذف ناموفق: ' + res.error.message); return; }
         loadChat();
       });
     }
@@ -810,10 +841,10 @@
     if (!text || !chatReplyTo) return;
     client.from('chat_messages').insert({ visitor_id: chatReplyTo, sender: 'owner', text: text })
       .then(function (res) {
-        if (res.error) { document.getElementById('chat-msg').textContent = 'Send failed: ' + res.error.message; return; }
+        if (res.error) { document.getElementById('chat-msg').textContent = 'ارسال ناموفق: ' + res.error.message; return; }
         document.getElementById('chat-reply-text').value = '';
         document.getElementById('chat-msg').textContent = '';
-        showToast('Reply sent — visitor sees it in seconds.');
+        showToast('پاسخ ارسال شد — بازدیدکننده چند ثانیه دیگر می‌بیند.');
         loadChat();
       });
   });
@@ -827,9 +858,123 @@
         renderChat();
         if (row.sender === 'visitor') {
           beep();
-          notifyAdmin('New chat message', '#chat-' + row.visitor_id + ': ' + String(row.text || '').slice(0, 80));
+          notifyAdmin('پیام چت جدید', '#chat-' + row.visitor_id + ': ' + String(row.text || '').slice(0, 80));
         }
       })
       .subscribe();
   }
+  /* ---------- SEO tab: per-page title/description + Google preview ----------
+     Values live in site_content (same keys the site applies at runtime);
+     tools/bake_seo.py then writes them into the static <title>/<meta> that
+     Google actually crawls. Static defaults below mirror the shipped HTML. */
+  var SEO_PAGES = [
+    { id: 'en', key: 'en_home', url: 'https://amirlwf.ir/',
+      title: 'Short-Form Video Editor | Get 1 Free Edit',
+      desc: 'Short-form video editor for Reels, TikTok and Shorts. Get your first reel edited FREE in 48 hours — no commitment.' },
+    { id: 'en_edit', key: 'en_edit', url: 'https://amirlwf.ir/en/services/edit.html',
+      title: 'Video Editing Services | Reels, Shorts and YouTube',
+      desc: 'Retention-first short-form editing: hooks, captions, pacing, color and sound for Reels, Shorts and YouTube. First edit free, 48 hours.' },
+    { id: 'en_web', key: 'en_web', url: 'https://amirlwf.ir/en/services/web.html',
+      title: 'Web Design Services | Fast, SEO-Friendly Sites',
+      desc: 'Fast, mobile-first websites and landing pages, built for speed and search, with support after launch. First short edit free.' },
+    { id: 'fa', key: 'fa_home', url: 'https://amirlwf.ir/fa/',
+      title: 'خدمات کامپیوتری در هشتگرد',
+      desc: 'نصب ویندوز و پرینتر در محل، طراحی سایت ارزان و ادیت ویدیو حرفه‌ای در هشتگرد و حومه. ثبت سفارش آنلاین با پیگیری لحظه‌ای.' },
+    { id: 'fa_edit', key: 'fa_edit', url: 'https://amirlwf.ir/fa/services/edit.html',
+      title: 'ادیت ویدیو حرفه‌ای | تدوین یوتیوب و ریلز',
+      desc: 'تدوین ویدیوی یوتیوب، ریلز اینستاگرام، تیزر تبلیغاتی و زیرنویس فارسی با اصلاح رنگ حرفه‌ای. سفارش آنلاین با تحویل منظم.' },
+    { id: 'fa_web', key: 'fa_web', url: 'https://amirlwf.ir/fa/services/web.html',
+      title: 'طراحی سایت ارزان و سئومحور | سفارش سایت',
+      desc: 'طراحی سایت شرکتی، فروشگاهی و لندینگ‌پیج؛ سریع، واکنش‌گرا و سئومحور با پشتیبانی بعد از تحویل.' },
+    { id: 'fa_pc', key: 'fa_pc', url: 'https://amirlwf.ir/fa/services/pc.html',
+      title: 'خدمات کامپیوتر در هشتگرد | نصب ویندوز و پرینتر',
+      desc: 'نصب ویندوز، نصب و عیب‌یابی پرینتر، افزایش سرعت سیستم و بکاپ اطلاعات در محل شما در هشتگرد و حومه.' }
+  ];
+  var SEO_MAP = {};
+  SEO_PAGES.forEach(function (p) { SEO_MAP[p.id] = p; });
+
+  function faNum(n) {
+    return String(n).replace(/[0-9]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'[+d]; });
+  }
+  function seoSel() {
+    var s = document.getElementById('seo-page-select');
+    return SEO_MAP[(s && s.value) || 'en'] || SEO_PAGES[0];
+  }
+  function seoStored(p) {
+    var d = contentCache[p.key] || {};
+    return {
+      title: (typeof d.seo_title === 'string' && d.seo_title.trim()) ? d.seo_title.trim() : '',
+      desc: (typeof d.seo_description === 'string' && d.seo_description.trim()) ? d.seo_description.trim() : ''
+    };
+  }
+  function seoPreview() {
+    var p = seoSel();
+    var title = (document.getElementById('seo-title').value || '').trim() || p.title;
+    var desc = (document.getElementById('seo-desc').value || '').trim() || p.desc;
+    document.getElementById('serp-url').textContent = p.url;
+    document.getElementById('serp-title').textContent = title;
+    document.getElementById('serp-desc').textContent = desc;
+    var tc = document.getElementById('seo-title-count');
+    var dc = document.getElementById('seo-desc-count');
+    tc.textContent = faNum(title.length);
+    dc.textContent = faNum(desc.length);
+    tc.className = title.length > 60 ? 'over' : '';
+    dc.className = desc.length > 155 ? 'over' : '';
+  }
+  function renderSeo() {
+    var p = seoSel();
+    var v = seoStored(p);
+    document.getElementById('seo-title').value = v.title || p.title;
+    document.getElementById('seo-desc').value = v.desc || p.desc;
+    var msg = document.getElementById('seo-msg');
+    if (msg) msg.textContent = v.title || v.desc
+      ? 'برای این صفحه سئوی سفارشی ذخیره شده است.'
+      : 'هنوز سئوی سفارشی ذخیره نشده — مقدار پیش‌فرض HTML اجرا می‌شود.';
+    seoPreview();
+  }
+  function renderSeoTable() {
+    var body = document.getElementById('seo-body');
+    if (!body) return;
+    body.innerHTML = '';
+    SEO_PAGES.forEach(function (p) {
+      var v = seoStored(p);
+      var title = v.title || p.title;
+      var desc = v.desc || p.desc;
+      var okT = title.length > 0 && title.length <= 60;
+      var okD = desc.length > 0 && desc.length <= 155;
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + esc(SEO_LABEL[p.id] || p.id) + '</td>' +
+        '<td dir="ltr"><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url.replace('https://amirlwf.ir', '')) + '</a></td>' +
+        '<td>' + faNum(title.length) + ' کاراکتر ' + (okT ? '✅' : '⚠️') + '</td>' +
+        '<td>' + faNum(desc.length) + ' کاراکتر ' + (okD ? '✅' : '⚠️') + '</td>' +
+        '<td>' + (v.title || v.desc ? 'سفارشی' : 'پیش‌فرض') + '</td>';
+      body.appendChild(tr);
+    });
+  }
+  var SEO_LABEL = {
+    en: 'انگلیسی — صفحه اصلی', en_edit: 'انگلیسی — ادیت ویدیو', en_web: 'انگلیسی — طراحی سایت',
+    fa: 'فارسی — صفحه اصلی', fa_edit: 'فارسی — ادیت ویدیو',
+    fa_web: 'فارسی — طراحی سایت', fa_pc: 'فارسی — خدمات کامپیوتری'
+  };
+
+  var seoSelEl = document.getElementById('seo-page-select');
+  if (seoSelEl) seoSelEl.addEventListener('change', renderSeo);
+  ['seo-title', 'seo-desc'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', seoPreview);
+  });
+  var seoSave = document.getElementById('seo-save-btn');
+  if (seoSave) seoSave.addEventListener('click', function () {
+    var p = seoSel();
+    var data = Object.assign({}, contentCache[p.key] || {});
+    data.seo_title = document.getElementById('seo-title').value.trim();
+    data.seo_description = document.getElementById('seo-desc').value.trim();
+    saveKey(p.key, data).then(function (res) {
+      if (res.error) { window.showToast('خطا: ' + res.error.message); return; }
+      contentCache[p.key] = data;
+      renderSeoTable();
+      window.showToast('سئوی ذخیره شد — برای دیده‌شدن در گوگل tools/bake_seo.py را اجرا و پوش کنید.');
+    });
+  });
 })();

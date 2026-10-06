@@ -25,6 +25,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 PAGES = {
     "en": "index.html",
+    "en_edit": "en/services/edit.html",
+    "en_web": "en/services/web.html",
     "fa": "fa/index.html",
     "fa_edit": "fa/services/edit.html",
     "fa_web": "fa/services/web.html",

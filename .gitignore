@@ -18,3 +18,7 @@ DEPLO*
 tools/.lh/
 node_modules/
 supabase/.temp/
+
+# python bytecode
+__pycache__/
+*.pyc
