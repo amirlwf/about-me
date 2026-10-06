@@ -148,6 +148,19 @@ https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<REF>.supabase.co/fun
 Owner replies in the panel also broadcast instantly to an open chat window
 (`owner_reply`), with the 15s REST sync as the safety net.
 
+## Two independent sections
+
+`/` + `/en/**` (English funnel for LinkedIn clients) and `/fa/**` (Persian
+introduction) do not reference each other at all:
+
+- no `<link rel="alternate" hreflang>` and no `x-default` anywhere
+- no language switcher in nav or footer, in either direction
+- no cross-domain link (`/en/**` never links to `/fa/**` and vice versa)
+- `sitemap.xml` carries no `xhtml:link` alternates
+
+`tools/verify.py` enforces every one of those (the `section split:` checks), so
+the EN funnel cannot silently grow a link back to the Persian section.
+
 ## Moving to a NEW Supabase project
 
 ```

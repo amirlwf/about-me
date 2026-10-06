@@ -1,0 +1,20 @@
+# Supabase CLI project config (remote deploys only — no local stack needed).
+# `--project-ref` / `supabase link` choose the cloud project; this file only tells
+# the CLI where the supabase/ folder is and how each function must be verified.
+project_id = "about-me"
+
+[functions.create-order]
+verify_jwt = false
+
+[functions.chat-send]
+verify_jwt = false
+
+[functions.chat-webhook]
+verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false
+
+# panel only: must present a valid Supabase JWT + admin claim
+[functions.bot-test]
+verify_jwt = true

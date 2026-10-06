@@ -80,8 +80,9 @@ def main():
             if p == "/fa/":
                 check(p + " og tags", all(k in html for k in ("og:title", "og:description", "og:url", "twitter:card")))
                 check(p + " single h1", html.count("<h1") == 1, f"h1x{html.count('<h1')}")
-                check(p + " hreflang", 'hreflang="fa" href="https://amirlwf.ir/fa/"' in html
-                      and 'hreflang="en" href="https://amirlwf.ir/"' in html)
+                check(p + " no EN alternate", "hreflang" not in html
+                      and '<link rel="alternate"' not in html,
+                      "EN alternate/hreflang still declared on a FA page")
                 check(p + " CSP meta", "Content-Security-Policy" in html)
                 check(p + " font preload",
                       'rel="preload" href="/assets/fonts/lalezar-400-arabic.woff2"' in html,
@@ -90,9 +91,13 @@ def main():
             check(p + " /fa/ links", "/fa/services/" in html or p == "/fa/",
                   "missing /fa/services links")
             check(p + " no bare root links", 'href="/services/' not in html)
-            check(p + " hreflang", 'hreflang="fa"' in html and "x-default" in html)
+            check(p + " isolated from EN",
+                  '<a class="lang-switch"' not in html
+                  and 'href="/en' not in html
+                  and 'href="https://amirlwf.ir/en' not in html
+                  and 'href="https://amirlwf.ir/"' not in html,
+                  "FA page still links to the EN section")
             check(p + " robots meta", 'name="robots" content="index,follow' in html)
-            check(p + " lang switcher", 'class="lang-switch"' in html)
 
         # ---- content depth (FA services) ----
         for p in ["/fa/services/edit.html", "/fa/services/web.html", "/fa/services/pc.html"]:
@@ -173,15 +178,19 @@ def main():
         d = re.search(r'<meta name="description" content="(.*?)"', en)
         check("en desc", bool(d) and len(d.group(1)) <= 155, (d.group(1)[:70] if d else "missing"))
         check("en canonical", '<link rel="canonical" href="https://amirlwf.ir/">' in en)
-        check("en hreflang out", 'hreflang="fa" href="https://amirlwf.ir/fa/"' in en
-              and 'hreflang="en" href="https://amirlwf.ir/"' in en)
+        check("en isolated from FA",
+              "hreflang" not in en
+              and '<a class="lang-switch"' not in en
+              and 'href="/fa' not in en
+              and 'href="https://amirlwf.ir/fa' not in en,
+              "EN page still points at the Persian section")
         check("en single h1", en.count("<h1") == 1, f"h1x{en.count('<h1')}")
         check("en hero", "Scroll-Stopping Shorts" in en and "Get 1 Free Edit" in en)
         check("en brand name", "Amir Reza Lotfi" in en)
         en_no_switch = re.sub(r'<a class="lang-switch".*?</a>', " ", en, flags=re.S)
         en_no_switch = re.sub(r"<script.*?</script>|<style.*?</style>", " ", en_no_switch, flags=re.S)
         check("en no persian text", not re.search(r"[\u0600-\u06FF]", en_no_switch), "persian chars found")
-        check("en lang switcher", 'href="/fa/" hreflang="fa"' in en)
+        check("en no lang switcher", 'class="lang-switch"' not in en)
         check("en theme separate", "en-minimal.css" in en and "site.css" not in en)
         check("en dyn hooks", all(k in en for k in ('data-en="hero_title"', 'data-channels-en',
               'id="portfolio-grid"', 'en-home.js')))
@@ -220,8 +229,12 @@ def main():
             check(p + " desc<=155", bool(d_) and len(d_.group(1)) <= 155, d_.group(1)[:70] if d_ else "missing")
             check(p + " canonical", bool(c_) and c_.group(1) == "https://amirlwf.ir" + p,
                   c_.group(1) if c_ else "missing")
-            check(p + " hreflang pair", 'hreflang="en"' in html and 'hreflang="fa"' in html
-                  and "x-default" in html)
+            check(p + " isolated from FA",
+                  "hreflang" not in html
+                  and '<a class="lang-switch"' not in html
+                  and 'href="/fa' not in html
+                  and 'href="https://amirlwf.ir/fa' not in html,
+                  "EN page still points at the Persian section")
             check(p + " robots meta", 'name="robots" content="index,follow' in html)
             check(p + " single h1", html.count("<h1") == 1, f"h1x{html.count('<h1')}")
             check(p + " og tags", all(k in html for k in ("og:title", "og:description", "og:url", "twitter:card")))
@@ -231,7 +244,7 @@ def main():
                   and 'data-sc-list' in html)
             check(p + " lead form", 'id="en-lead-form"' in html and 'id="e-email"' in html
                   and 'id="f-phone"' not in html)
-            check(p + " lang switcher", 'class="lang-switch"' in html and 'hreflang="fa"' in html)
+            check(p + " no lang switcher", 'class="lang-switch"' not in html)
             check(p + " site.js", "site.js" in html and "en-lead.js" in html)
             check(p + " no bare root service links", 'href="/services/' not in html)
             txt = re.sub(r"<script.*?</script>|<style.*?</style>", " ", html, flags=re.S)
@@ -247,10 +260,25 @@ def main():
                 except Exception: ok = False
             check(p + " json-ld", ok and "Service" in types and "FAQPage" in types
                   and "BreadcrumbList" in types, str(types))
-        check("en section pairing",
-              'hreflang="en" href="https://amirlwf.ir/en/services/edit.html"' in fetched["/fa/services/edit.html"][1]
-              and 'hreflang="fa" href="https://amirlwf.ir/fa/services/edit.html"' in fetched["/en/services/edit.html"][1]
-              and 'hreflang="en" href="https://amirlwf.ir/en/services/web.html"' in fetched["/fa/services/web.html"][1])
+        # EN and FA funnels are two independent sections: no alternate tags,
+        # no cross links in either direction.
+        for ep in ["/", "/en/services/edit.html", "/en/services/web.html"]:
+            e_html = fetched[ep][1]
+            check("section split: " + ep + " has no FA target",
+                  "hreflang" not in e_html
+                  and '/fa/' not in e_html
+                  and 'amirlwf.ir/fa' not in e_html
+                  and '<a class="lang-switch"' not in e_html,
+                  "EN page still references /fa/")
+        for fp in ["/fa/", "/fa/services/edit.html", "/fa/services/web.html",
+                   "/fa/services/pc.html", "/fa/callme/"]:
+            f_html = fetched[fp][1]
+            check("section split: " + fp + " has no EN target",
+                  "hreflang" not in f_html
+                  and '<a class="lang-switch"' not in f_html
+                  and 'href="https://amirlwf.ir/en' not in f_html
+                  and 'href="https://amirlwf.ir/"' not in f_html,
+                  "FA page still references the EN section")
 
         # ---- admin: unified panel ----
         adm = fetched["/admin/"][1]
@@ -292,10 +320,9 @@ def main():
         check("sitemap no bare /en/ redirect", "<loc>https://amirlwf.ir/en/</loc>" not in sm)
         stripped = sm.replace("/fa/services/", "").replace("/en/services/", "")
         check("sitemap no bare /services/", "/services/" not in stripped)
-        check("sitemap hreflang", 'hreflang="fa"' in sm and 'hreflang="en"' in sm
-              and 'hreflang="x-default"' in sm)
-        check("sitemap pairs", sm.count('hreflang="en"') == 6 and sm.count('hreflang="fa"') == 8,
-              f"en x{sm.count(chr(34) + 'en' + chr(34))} fa x{sm.count(chr(34) + 'fa' + chr(34))}")
+        check("sitemap no language alternates",
+              "xhtml:link" not in sm and "hreflang" not in sm,
+              "sitemap still pairs the two sections")
         check("sitemap lastmod", sm.count("<lastmod>") >= 7, f"lastmod x{sm.count('<lastmod>')}")
         check("robots sitemap", "sitemap.xml" in fetched["/robots.txt"][1].lower())
 
