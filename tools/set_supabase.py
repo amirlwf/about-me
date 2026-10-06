@@ -67,6 +67,33 @@ def main():
     print("updated %d files -> %s" % (len(touched), new_host))
     for f in touched:
         print("  ", f)
+
+    # Cache-bust: GitHub Pages serves assets with max-age=14400, so a browser
+    # that already cached the previous project's config keeps calling the dead
+    # project for 4 hours (forms/chat "randomly" failing after a migration).
+    # Bump the query string so every page load re-fetches supabase-config.js.
+    import glob as _glob
+    import re as _re
+    import time as _t
+
+    ver = _t.strftime("%Y%m%d") + str(int(_t.time()) % 100)
+    bumped = 0
+    for path in _glob.glob(os.path.join(ROOT, "**", "*.html"), recursive=True):
+        if os.sep + ".git" in path:
+            continue
+        raw = io.open(path, encoding="utf-8", newline="").read()
+        if "supabase-config.js" not in raw:
+            continue
+        crlf = "\r\n" in raw
+        t = raw.replace("\r\n", "\n")
+        new_t = _re.sub(r"supabase-config\.js(\?v=[0-9]+)?",
+                        "supabase-config.js?v=" + ver, t)
+        if new_t != t:
+            io.open(path, "w", encoding="utf-8", newline="").write(
+                new_t.replace("\n", "\r\n") if crlf else new_t)
+            bumped += 1
+    print("cache-bust supabase-config.js?v=%s on %d pages" % (ver, bumped))
+
     print("\nnext: git add -A && git commit && git push")
     return 0
 
