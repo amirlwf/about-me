@@ -392,6 +392,14 @@ def main():
                 continue
             html_files_root += [os.path.join(_b, x) for x in _f if x.endswith(".html")]
 
+        # ---- SQL lint: unterminated literals / broken JSON in the paste ----
+        _lint = os.path.join(ROOT, "tools", "sql_lint.py")
+        if os.path.isfile(_lint):
+            r = subprocess.run([sys.executable, _lint], capture_output=True, text=True)
+            check("sql_lint clean", r.returncode == 0, (r.stdout or "").strip()[-300:])
+        else:
+            check("sql_lint tool exists", False)
+
         # ================= SETUP / PROJECT REPOINT =================
         import importlib.util as _ilu
         _bs_path = os.path.join(ROOT, "tools", "build_setup_all.py")

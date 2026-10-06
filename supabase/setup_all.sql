@@ -358,7 +358,7 @@ insert into public.site_content (key, value) values
 
   "hero_title": "I Edit Scroll-Stopping Shorts",
 
-  "hero_lead": "I'm Amir Reza Lotfi. Reels, TikToks and Shorts cut for retention — strong hooks, punchy captions, clean sound. Try me free before you pay a cent.",
+  "hero_lead": "I’m Amir Reza Lotfi. Reels, TikToks and Shorts cut for retention — strong hooks, punchy captions, clean sound. Try me free before you pay a cent.",
 
   "hero_cta_primary": "Get 1 Free Edit",
 
