@@ -127,12 +127,36 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "db insert failed" }), { status: 500, headers: cors });
   }
 
-  // Telegram notify (mock-safe: skipped when secrets absent).
-  // FA orders -> FA bot; EN leads -> EN bot. Fully separate.
-  const faToken = Deno.env.get("FA_BOT_TOKEN") || Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
-  const faChat = Deno.env.get("FA_CHAT_ID") || Deno.env.get("ADMIN_CHAT_ID") || "";
-  const enToken = Deno.env.get("EN_BOT_TOKEN") || "";
-  const enChat = Deno.env.get("EN_CHAT_ID") || "";
+  // Telegram notify (mock-safe: skipped when nothing configured).
+  // FA orders -> orders_fa bot, EN leads -> orders_en bot. Fully separate.
+  // Credentials: public.bot_config (admin panel) first, secrets as fallback.
+  let faToken = "";
+  let faChat = "";
+  let enToken = "";
+  let enChat = "";
+  let botVia = "env";
+  try {
+    const botId = isEN ? "orders_en" : "orders_fa";
+    const { data: bot } = await supa
+      .from("bot_config")
+      .select("bot_token, chat_id, enabled")
+      .eq("id", botId)
+      .maybeSingle();
+    if (bot && bot.enabled && bot.bot_token && bot.chat_id) {
+      if (isEN) {
+        enToken = bot.bot_token;
+        enChat = bot.chat_id;
+      } else {
+        faToken = bot.bot_token;
+        faChat = bot.chat_id;
+      }
+      botVia = "db";
+    }
+  } catch { /* bot_config table missing -> secrets fallback */ }
+  if (!faToken) faToken = Deno.env.get("FA_BOT_TOKEN") || Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
+  if (!faChat) faChat = Deno.env.get("FA_CHAT_ID") || Deno.env.get("ADMIN_CHAT_ID") || "";
+  if (!enToken) enToken = Deno.env.get("EN_BOT_TOKEN") || "";
+  if (!enChat) enChat = Deno.env.get("EN_CHAT_ID") || "";
   const enTag = service === "web" ? "[EN-WEB]" : "[EN-FREE]";
   const msg = isEN
     ? `🎬 <b>${enTag} New lead #order-${data.id}</b>\n` +
@@ -152,7 +176,7 @@ Deno.serve(async (req: Request) => {
   await supa.from("notifications").insert({
     order_id: data.id,
     channel: "telegram",
-    payload: { sent: tgSent, mock: !((isEN ? (enToken && enChat) : (faToken && faChat))), source: isEN ? "en_landing" : "fa_site" },
+    payload: { sent: tgSent, bot: botVia, mock: !((isEN ? (enToken && enChat) : (faToken && faChat))), source: isEN ? "en_landing" : "fa_site" },
   });
 
   return new Response(JSON.stringify({ id: data.id, track_token: trackToken }), {

@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>گفت‌وگوی زنده با امیر | چت آنلاین</title>
-    <meta name="description" content="گفت‌وگوی زنده با امیر: چت آنلاین برای مشاوره رایگان خدمات کامپیوتری، طراحی سایت و ادیت ویدیو — پاسخ آنی، بدون تماس تلفنی.">
-    <meta name="robots" content="index,follow,max-image-preview:large">
+    <title>گفت‌وگوی زنده با امیررضا لطفی | چت آنلاین</title>
+    <meta name="description" content="با امیررضا لطفی به‌صورت زنده چت کنید: پاسخ سوالات، مشاوره رایگان خدمات کامپیوتری، طراحی سایت و ادیت ویدیو، به‌صورت آنی و بدون تماس تلفنی.">
+    <meta name="author" content="امیررضا لطفی">
+<meta name="robots" content="index,follow,max-image-preview:large">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="fa_IR">
-    <meta property="og:title" content="گفت‌وگوی زنده با امیر | چت آنلاین">
-    <meta property="og:description" content="چت آنلاین برای مشاوره رایگان خدمات کامپیوتری، طراحی سایت و ادیت ویدیو.">
+    <meta property="og:title" content="گفت‌وگوی زنده با امیررضا لطفی | چت آنلاین">
+    <meta property="og:description" content="با امیررضا لطفی به‌صورت زنده چت کنید: پاسخ سوالات، مشاوره رایگان خدمات کامپیوتری، طراحی سایت و ادیت ویدیو، به‌صورت آنی و بدون تماس تلفنی.">
     <meta property="og:url" content="https://amirlwf.ir/callme/">
     <meta property="og:image" content="https://amirlwf.ir/assets/img/og-cover.jpg">
     <meta name="twitter:card" content="summary_large_image">
@@ -549,6 +550,15 @@
                                 renderMessages();
                             } else if (row && row.sender === 'visitor') {
                                 lastSeenId = Math.max(lastSeenId, Number(row.id));
+                            }
+                        })
+                        // broadcast فوری از پنل ادمین (RLS هدر x-visitor-id را در Realtime ندارد)
+                        .on('broadcast', { event: 'owner_reply' }, function (payload) {
+                            const row = payload && payload.payload;
+                            if (!row || !row.id || !row.text) return;
+                            if (ingestOwner({ id: Number(row.id), text: row.text, created_at: row.created_at })) {
+                                saveHistory(chatHistory);
+                                renderMessages();
                             }
                         })
                         .subscribe();

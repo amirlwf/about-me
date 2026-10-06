@@ -168,7 +168,7 @@ def main():
         en = fetched["/"][1]
         check("en lang", '<html lang="en"' in en)
         t = re.search(r"<title>(.*?)</title>", en, re.S)
-        check("en title", bool(t) and t.group(1) == "Short-Form Video Editor | Get 1 Free Edit",
+        check("en title", bool(t) and t.group(1) == "Amir Reza Lotfi | Short-Form Video Editor \u2014 Get 1 Free Edit",
               t.group(1)[:70] if t else "missing")
         d = re.search(r'<meta name="description" content="(.*?)"', en)
         check("en desc", bool(d) and len(d.group(1)) <= 155, (d.group(1)[:70] if d else "missing"))
@@ -179,6 +179,7 @@ def main():
         check("en hero", "Scroll-Stopping Shorts" in en and "Get 1 Free Edit" in en)
         check("en brand name", "Amir Reza Lotfi" in en)
         en_no_switch = re.sub(r'<a class="lang-switch".*?</a>', " ", en, flags=re.S)
+        en_no_switch = re.sub(r"<script.*?</script>|<style.*?</style>", " ", en_no_switch, flags=re.S)
         check("en no persian text", not re.search(r"[\u0600-\u06FF]", en_no_switch), "persian chars found")
         check("en lang switcher", 'href="/fa/" hreflang="fa"' in en)
         check("en theme separate", "en-minimal.css" in en and "site.css" not in en)
@@ -368,6 +369,59 @@ def main():
               and "About Me" not in cm)
         check("fa callme head seo", '<link rel="canonical" href="https://amirlwf.ir/fa/callme/">'
               in fetched["/fa/callme/"][1])
+
+        # ================= PERSONAL BRAND (name search) =================
+        G = lambda path: fetched.get(path, (0, ""))[1]
+        FA_NAME, EN_NAME = "امیررضا لطفی", "Amir Reza Lotfi"
+
+        def title_of(path):
+            m = re.search(r"<title>(.*?)</title>", G(path), re.S)
+            return m.group(1) if m else ""
+
+        for p in ["/fa/", "/fa/services/edit.html", "/fa/services/web.html", "/fa/services/pc.html", "/fa/callme/"]:
+            check(p + " fa name in <title>", FA_NAME in title_of(p))
+            check(p + " fa name in page", FA_NAME in G(p))
+        for p in ["/", "/en/services/edit.html", "/en/services/web.html"]:
+            check(p + " en name in <title>", EN_NAME in title_of(p))
+        check("en home Person JSON-LD", '"@type":"Person"' in G("/") and EN_NAME in G("/"))
+        check("fa home Person JSON-LD", '"@type":"Person"' in G("/fa/") and FA_NAME in G("/fa/"))
+        check("Person sameAs", "github.com/amirlwf" in G("/") and "github.com/amirlwf" in G("/fa/"))
+        HTML_PAGES = ["/", "/fa/", "/fa/services/edit.html", "/fa/services/web.html", "/fa/services/pc.html",
+                      "/en/services/edit.html", "/en/services/web.html", "/callme/", "/fa/callme/", "/admin/"]
+        for p in HTML_PAGES:
+            check(p + " author meta", re.search(r'<meta name="author" content="[^"]+"', G(p)) is not None)
+        check("fa home FAQ identity item", (FA_NAME + " کیست؟") in G("/fa/") and G("/fa/").count(FA_NAME + " کیست؟") >= 2)
+        check("en hero names person", "Amir Reza Lotfi" in G("/"))
+
+        # ================= BOTS (admin-managed Telegram credentials) =================
+        mb_path = os.path.join(ROOT, "supabase", "migration_bots.sql")
+        check("migration bots sql exists", os.path.exists(mb_path))
+        if os.path.exists(mb_path):
+            mb = open(mb_path, encoding="utf-8").read()
+            for token in ["create table if not exists public.bot_config",
+                          "revoke all on public.bot_config from anon",
+                          "bot_config_admin_all", "'chat'", "'orders_fa'", "'orders_en'"]:
+                check("bots sql " + token[:32], token in mb)
+        fn_dir = os.path.join(ROOT, "supabase", "functions")
+        check("bot-test function exists", os.path.isfile(os.path.join(fn_dir, "bot-test", "index.ts")))
+        for fn in ["create-order", "chat-send", "chat-webhook"]:
+            src = open(os.path.join(fn_dir, fn, "index.ts"), encoding="utf-8").read()
+            check(fn + " reads bot_config", 'from("bot_config")' in src)
+        adm_h = open(os.path.join(ROOT, "admin", "index.html"), encoding="utf-8").read()
+        check("admin bots tab", 'data-tab="bots"' in adm_h and 'id="tab-bots"' in adm_h)
+        check("admin bots fields", adm_h.count("data-bot-token=") == 3 and adm_h.count("data-bot-chatid=") == 3)
+        adm_j = open(os.path.join(ROOT, "assets", "js", "admin.js"), encoding="utf-8").read()
+        for token in ["function loadBots", "function saveBot", "function testBot",
+                      "bot_config", "functions.invoke('bot-test'"]:
+            check("admin.js " + token, token in adm_j)
+
+        # ================= LIVE CHAT: instant owner reply =================
+        for f in ["callme/index.html", "fa/callme/index.html"]:
+            html = open(os.path.join(ROOT, *f.split("/")), encoding="utf-8").read()
+            check(f + " broadcast owner_reply", "owner_reply" in html)
+            check(f + " chat-send wired", "functions/v1/chat-send" in html and "x-visitor-id" in html)
+        check("admin broadcasts owner reply", "owner_reply" in adm_j and ".select('id')" in adm_j)
+
     finally:
         srv.shutdown()
 

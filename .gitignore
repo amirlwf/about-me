@@ -22,3 +22,7 @@ supabase/.temp/
 # python bytecode
 __pycache__/
 *.pyc
+
+# the bot-test edge function is NOT a test artifact
+!supabase/functions/bot-test/
+!supabase/functions/bot-test/**

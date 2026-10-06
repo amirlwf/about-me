@@ -1,222 +1,284 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>پنل مدیریت | امیر</title>
-<meta name="robots" content="noindex, nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; media-src 'self' https:; connect-src 'self' https://ysjdodvtmihaxyioknuo.supabase.co wss://ysjdodvtmihaxyioknuo.supabase.co; base-uri 'self'; form-action 'self'">
-<link rel="icon" type="image/png" sizes="32x32" href="/assets/img/icon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicon-16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/assets/img/icon-180.png">
-<link rel="stylesheet" href="/assets/fonts/fonts.css">
-<link rel="stylesheet" href="/assets/css/en-minimal.css">
-<link rel="stylesheet" href="/assets/css/admin.css">
-</head>
-<body>
-
-<header class="en-header">
-<div class="wrap">
-<a class="brand" href="/">امیر · پنل مدیریت</a>
-<div class="admin-bar m-0">
-<span id="live-ind" class="pill hidden"><span class="live-dot"></span>زنده</span>
-<button class="btn btn-ghost btn-sm hidden" id="logout-btn">خروج</button>
-</div>
-</div>
-</header>
-
-<main class="wrap">
-<section class="section" id="login-section">
-<h1>ورود ادمین</h1>
-<div class="form-card">
-<form id="login-form">
-<div class="field"><label for="l-email">ایمیل</label><input id="l-email" type="email" dir="ltr" autocomplete="username" required></div>
-<div class="field"><label for="l-pass">رمز عبور</label><input id="l-pass" type="password" dir="ltr" autocomplete="current-password" required></div>
-<button class="btn btn-primary" type="submit">ورود</button>
-<p class="hint text-danger" id="login-err"></p>
-</form>
-</div>
-</section>
-
-<section class="section hidden" id="panel-section">
-<div class="tabs" role="tablist" aria-label="بخش‌های پنل">
-<button class="tab active" data-tab="orders" role="tab">سفارش‌ها</button>
-<button class="tab" data-tab="chat" role="tab">گفت‌وگوی زنده</button>
-<button class="tab" data-tab="content" role="tab">محتوای صفحات</button>
-<button class="tab" data-tab="seo" role="tab">سئو (SEO)</button>
-<button class="tab" data-tab="channels" role="tab">کانال‌های تماس</button>
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پنل مدیریت | امیررضا لطفی</title>
+<meta name="author" content="امیررضا لطفی">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; media-src 'self' https:; connect-src 'self' https://ysjdodvtmihaxyioknuo.supabase.co wss://ysjdodvtmihaxyioknuo.supabase.co; base-uri 'self'; form-action 'self'">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/img/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/img/icon-180.png">
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
+<link rel="stylesheet" href="/assets/css/en-minimal.css">
+<link rel="stylesheet" href="/assets/css/admin.css">
+</head>
+<body>
+
+<header class="en-header">
+<div class="wrap">
+<a class="brand" href="/">امیررضا لطفی · پنل مدیریت</a>
+<div class="admin-bar m-0">
+<span id="live-ind" class="pill hidden"><span class="live-dot"></span>زنده</span>
+<button class="btn btn-ghost btn-sm hidden" id="logout-btn">خروج</button>
+</div>
+</div>
+</header>
+
+<main class="wrap">
+<section class="section" id="login-section">
+<h1>ورود ادمین</h1>
+<div class="form-card">
+<form id="login-form">
+<div class="field"><label for="l-email">ایمیل</label><input id="l-email" type="email" dir="ltr" autocomplete="username" required></div>
+<div class="field"><label for="l-pass">رمز عبور</label><input id="l-pass" type="password" dir="ltr" autocomplete="current-password" required></div>
+<button class="btn btn-primary" type="submit">ورود</button>
+<p class="hint text-danger" id="login-err"></p>
+</form>
+</div>
+</section>
+
+<section class="section hidden" id="panel-section">
+<div class="tabs" role="tablist" aria-label="بخش‌های پنل">
+<button class="tab active" data-tab="orders" role="tab">سفارش‌ها</button>
+<button class="tab" data-tab="chat" role="tab">گفت‌وگوی زنده</button>
+<button class="tab" data-tab="content" role="tab">محتوای صفحات</button>
+<button class="tab" data-tab="seo" role="tab">سئو (SEO)</button>
+<button class="tab" data-tab="channels" role="tab">کانال‌های تماس</button>
 <button class="tab" data-tab="portfolio" role="tab">نمونه‌کارها</button>
+<button class="tab" data-tab="bots" role="tab">بات‌ها</button>
+</div>
+
+<div class="tabpane active" id="tab-orders">
+<h1>سفارش‌ها <span class="pill"><span class="live-dot"></span>بدون نیاز به رفرش</span></h1>
+<div class="admin-bar">
+<label>وضعیت:
+<select id="status-filter">
+<option value="">همه</option>
+<option value="new">جدید</option>
+<option value="in_progress">در حال انجام</option>
+<option value="done">انجام شد</option>
+</select>
+</label>
+<label>منبع:
+<select id="source-filter">
+<option value="">همه</option>
+<option value="fa_site">سایت فارسی</option>
+<option value="en_landing">سایت انگلیسی</option>
+</select>
+</label>
+<button class="btn btn-ghost" id="refresh-btn">بروزرسانی</button>
+<button class="btn btn-ghost" id="notify-btn">🔕 فعال‌کردن اعلان سفارش</button>
+</div>
+<div class="scroll-x">
+<table class="admin-table" id="orders-table">
+<thead><tr><th>زمان</th><th>نام</th><th>ارتباط</th><th>خدمت</th><th>جزئیات</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+<tbody id="orders-body"><tr><td colspan="7">در حال بارگذاری…</td></tr></tbody>
+</table>
+</div>
+</div>
+
+<div class="tabpane" id="tab-chat">
+<h1>گفت‌وگوی زنده <span class="pill"><span class="live-dot"></span>لحظه‌ای</span></h1>
+<p class="hint">پیام بازدیدکنندگان از <b>/callme/</b> و <b>/fa/callme/</b>. اینجا پاسخ دهید — بازدیدکننده همان لحظه پیام را می‌بیند (یا در بازدید بعدی). پاسخ ربات تلگرام (روی پیام #chat ریپلای کنید) هم در همین تردید می‌آید.</p>
+<div class="admin-bar">
+<label>بازدیدکننده:
+<select id="chat-visitor"><option value="">همه بازدیدکنندگان</option></select>
+</label>
+<button class="btn btn-ghost" id="chat-refresh">بروزرسانی</button>
+</div>
+<div class="scroll-x">
+<table class="admin-table" id="chat-table">
+<thead><tr><th>زمان</th><th>بازدیدکننده</th><th>پیام</th><th>عملیات</th></tr></thead>
+<tbody id="chat-body"><tr><td colspan="4">در حال بارگذاری…</td></tr></tbody>
+</table>
+</div>
+<div class="form-card hidden" id="chat-reply-box">
+<p class="hint" id="chat-reply-to"></p>
+<div class="field"><label for="chat-reply-text">متن پاسخ</label><textarea id="chat-reply-text" rows="2" maxlength="2000"></textarea></div>
+<button class="btn btn-primary" id="chat-send-btn">ارسال پاسخ</button>
+<p class="hint" id="chat-msg"></p>
+</div>
+</div>
+
+<div class="tabpane" id="tab-content">
+<h1>محتوای صفحات</h1>
+<p class="hint">صفحه را انتخاب کنید، متن‌ها را ویرایش و ذخیره کنید. تغییرات ظرف چند ثانیه روی سایت اعمال می‌شود (بدون نیاز به دیپلوی).</p>
+<div class="admin-bar">
+<label>صفحه:
+<select id="page-select">
+<option value="en">انگلیسی — صفحه اصلی (/)</option>
+<option value="en_edit">انگلیسی — ادیت ویدیو (/en/services/edit.html)</option>
+<option value="en_web">انگلیسی — طراحی سایت (/en/services/web.html)</option>
+<option value="fa">فارسی — صفحه اصلی (/fa/)</option>
+<option value="fa_edit">فارسی — ادیت ویدیو (/fa/services/edit.html)</option>
+<option value="fa_web">فارسی — طراحی سایت (/fa/services/web.html)</option>
+<option value="fa_pc">فارسی — خدمات کامپیوتری (/fa/services/pc.html)</option>
+<option value="shared">مشترک — اطلاعات کسب‌وکار و کاتالوگ خدمات</option>
+</select>
+</label>
+<label class="seo-hint">عنوان و توضیح سئوی هر صفحه همین‌جاست؛ پیش‌نمایش گوگل در بخش «سئو» است.</label>
+</div>
+<div id="content-fields"></div>
+<div class="admin-bar"><button class="btn btn-primary" id="save-content-btn">ذخیره محتوای صفحه</button></div>
+</div>
+
+<div class="tabpane" id="tab-seo">
+<h1>سئو (SEO)</h1>
+<p class="hint">عنوان و توضیح هر صفحه را ویرایش کنید و پیش‌نمایش نتیجه گوگل را همین‌جا ببینید. تغییرات فوراً روی سایت اعمال می‌شود؛ برای اینکه گوگل عنوان جدید را در نتایج جست‌وجو ببیند، بعد از ذخیره دستور <code>python tools/bake_seo.py</code> را محلی اجرا و پروژه را پوش کنید.</p>
+<div class="admin-bar">
+<label>صفحه:
+<select id="seo-page-select">
+<option value="en">انگلیسی — صفحه اصلی (/)</option>
+<option value="en_edit">انگلیسی — ادیت ویدیو (/en/services/edit.html)</option>
+<option value="en_web">انگلیسی — طراحی سایت (/en/services/web.html)</option>
+<option value="fa">فارسی — صفحه اصلی (/fa/)</option>
+<option value="fa_edit">فارسی — ادیت ویدیو (/fa/services/edit.html)</option>
+<option value="fa_web">فارسی — طراحی سایت (/fa/services/web.html)</option>
+<option value="fa_pc">فارسی — خدمات کامپیوتری (/fa/services/pc.html)</option>
+</select>
+</label>
+</div>
+<div class="form-card">
+<div class="field">
+<label for="seo-title">عنوان صفحه (حداکثر ۶۰ کاراکتر)</label>
+<input id="seo-title" type="text" maxlength="90" dir="auto" autocomplete="off">
+<p class="hint"><span id="seo-title-count">۰</span> / ۶۰ کاراکتر — عنوان بلندتر در نتایج گوگل بریده می‌شود.</p>
+</div>
+<div class="field">
+<label for="seo-desc">توضیح صفحه (حداکثر ۱۵۵ کاراکتر)</label>
+<textarea id="seo-desc" rows="3" maxlength="300" dir="auto"></textarea>
+<p class="hint"><span id="seo-desc-count">۰</span> / ۱۵۵ کاراکتر — توضیح کامل‌تر کلیک بیشتری می‌آورد.</p>
+</div>
+<div class="serp" id="serp" dir="ltr">
+<div class="serp-url" id="serp-url">https://amirlwf.ir/</div>
+<div class="serp-title" id="serp-title">عنوان صفحه</div>
+<div class="serp-desc" id="serp-desc">توضیح صفحه اینجا دیده می‌شود.</div>
+</div>
+<div class="admin-bar"><button class="btn btn-primary" id="seo-save-btn">ذخیره سئوی این صفحه</button></div>
+<p class="hint" id="seo-msg"></p>
+</div>
+
+<h2>وضعیت سئوی همه صفحه‌ها</h2>
+<div class="scroll-x">
+<table class="admin-table" id="seo-table">
+<thead><tr><th>صفحه</th><th>آدرس</th><th>عنوان</th><th>توضیح</th><th>وضعیت</th></tr></thead>
+<tbody id="seo-body"><tr><td colspan="5">در حال بارگذاری…</td></tr></tbody>
+</table>
+</div>
+<p class="hint">وضعیت «سفارشی» یعنی مقدار از پنل ذخیره شده و روی سایت فعال است؛ «پیش‌فرض» یعنی همان مقدار ثابت داخل HTML اجرا می‌شود. نقشه سایت: <code>/sitemap.xml</code> — ربات‌ها: <code>/robots.txt</code>.</p>
+</div>
+
+<div class="tabpane" id="tab-channels">
+<h1>کانال‌های تماس</h1>
+<p class="hint">صفحه را انتخاب کنید — هر صفحه کلید روشن/خاموش خودش را دارد. خودِ مقادیر (شماره و آیدی‌ها) مشترک‌اند و یک‌جا ویرایش می‌شوند.</p>
+<div class="admin-bar">
+<label>صفحه:
+<select id="channels-page-select">
+<option value="en">انگلیسی — صفحه اصلی (/)</option>
+<option value="en_edit">انگلیسی — ادیت ویدیو (/en/services/edit.html)</option>
+<option value="en_web">انگلیسی — طراحی سایت (/en/services/web.html)</option>
+<option value="fa">فارسی — صفحه اصلی (/fa/)</option>
+<option value="fa_edit">فارسی — ادیت ویدیو (/fa/services/edit.html)</option>
+<option value="fa_web">فارسی — طراحی سایت (/fa/services/web.html)</option>
+<option value="fa_pc">فارسی — خدمات کامپیوتری (/fa/services/pc.html)</option>
+</select>
+</label>
+</div>
+<div class="form-card" id="channels-fields"></div>
+<div class="admin-bar"><button class="btn btn-primary" id="save-channels-btn">ذخیره کانال‌ها</button></div>
+</div>
+
+<div class="tabpane" id="tab-portfolio">
+<h1>نمونه‌کارها</h1>
+<p class="hint">عکس بندانگشتی را آپلود کنید، لینک ویدیو (اختیاری) بزنید و عنوان و صفحه را مشخص کنید. موارد «نمایش» بلافاصله روی سایت ظاهر می‌شوند.</p>
+<div class="form-card">
+<div class="field"><label for="p-page">نمایش در صفحه</label><select id="p-page"><option value="en">انگلیسی</option><option value="fa">فارسی</option></select></div>
+<div class="field"><label for="p-title">عنوان *</label><input id="p-title" type="text" maxlength="120"></div>
+<div class="field"><label for="p-caption">توضیح کوتاه (اختیاری)</label><input id="p-caption" type="text" maxlength="500"></div>
+<div class="field"><label for="p-thumb">تصویر بندانگشتی *</label><input id="p-thumb" type="file" accept="image/*"></div>
+<div class="field"><label for="p-video">لینک ویدیو (اختیاری)</label><input id="p-video" type="url" dir="ltr" placeholder="https://…"></div>
+<div class="field"><label for="p-sort">ترتیب (عدد کوچک‌تر اول)</label><input id="p-sort" type="number" value="0" dir="ltr"></div>
+<div class="field"><label><input id="p-visible" type="checkbox" class="w-auto" checked> نمایش روی سایت</label></div>
+<button class="btn btn-primary" id="p-add-btn">آپلود و افزودن</button>
+<p class="hint" id="p-msg"></p>
+</div>
+<div class="scroll-x">
+<table class="admin-table" id="portfolio-table">
+<thead><tr><th>عکس</th><th>عنوان</th><th>صفحه</th><th>نمایش</th><th>عملیات</th></tr></thead>
+<tbody id="portfolio-body"><tr><td colspan="5">در حال بارگذاری…</td></tr></tbody>
+</table>
+</div>
+</div>
+
+<div class="tabpane" id="tab-bots">
+<h1>بات‌های تلگرام</h1>
+<p class="hint">هر بات کلید (توکن) و <code>chat_id</code> جدا دارد؛ همه داخل دیتابیس پروژه ذخیره می‌شوند، فقط ادمین به آن‌ها دسترسی دارد و کد سایت هرگز توکن را نمی‌بیند. بعد از ذخیره، «تست اتصال» بزنید تا پیام آزمایشی در تلگرام بیاید.</p>
+<div class="bots-grid" id="bots-grid">
+
+<div class="bot-card" data-bot="chat">
+<div class="bot-head"><span class="bot-ico">💬</span>
+<div class="bot-title"><h2>بات گفت‌وگوی زنده</h2><p class="hint">اعلان پیام بازدیدکننده در /fa/callme/ و پاسخ شما با Reply</p></div>
+<label class="bot-on"><input type="checkbox" data-bot-enabled="chat"> فعال</label></div>
+<div class="field"><label for="bot-token-chat">توکن بات (از @BotFather)</label>
+<input id="bot-token-chat" type="password" data-bot-token="chat" dir="ltr" autocomplete="off" spellcheck="false" placeholder="123456789:AA..."></div>
+<div class="field"><label for="bot-chatid-chat">chat_id مقصد</label>
+<input id="bot-chatid-chat" type="text" data-bot-chatid="chat" dir="ltr" inputmode="numeric" placeholder="8376494566"></div>
+<div class="bot-actions">
+<button class="btn btn-ghost" data-bot-show="chat" type="button">نمایش توکن</button>
+<button class="btn btn-ghost" data-bot-test="chat" type="button">تست اتصال</button>
+<button class="btn btn-primary" data-bot-save="chat" type="button">ذخیره</button>
+</div>
+<p class="hint" data-bot-msg="chat"></p>
 </div>
 
-<div class="tabpane active" id="tab-orders">
-<h1>سفارش‌ها <span class="pill"><span class="live-dot"></span>بدون نیاز به رفرش</span></h1>
-<div class="admin-bar">
-<label>وضعیت:
-<select id="status-filter">
-<option value="">همه</option>
-<option value="new">جدید</option>
-<option value="in_progress">در حال انجام</option>
-<option value="done">انجام شد</option>
-</select>
-</label>
-<label>منبع:
-<select id="source-filter">
-<option value="">همه</option>
-<option value="fa_site">سایت فارسی</option>
-<option value="en_landing">سایت انگلیسی</option>
-</select>
-</label>
-<button class="btn btn-ghost" id="refresh-btn">بروزرسانی</button>
-<button class="btn btn-ghost" id="notify-btn">🔕 فعال‌کردن اعلان سفارش</button>
+<div class="bot-card" data-bot="orders_fa">
+<div class="bot-head"><span class="bot-ico">🧺</span>
+<div class="bot-title"><h2>بات اطلاعات مشتری (فارسی)</h2><p class="hint">اعلان سفارش‌های بخش فارسی سایت (فرم ثبت سفارش)</p></div>
+<label class="bot-on"><input type="checkbox" data-bot-enabled="orders_fa"> فعال</label></div>
+<div class="field"><label for="bot-token-orders_fa">توکن بات (از @BotFather)</label>
+<input id="bot-token-orders_fa" type="password" data-bot-token="orders_fa" dir="ltr" autocomplete="off" spellcheck="false" placeholder="123456789:AA..."></div>
+<div class="field"><label for="bot-chatid-orders_fa">chat_id مقصد</label>
+<input id="bot-chatid-orders_fa" type="text" data-bot-chatid="orders_fa" dir="ltr" inputmode="numeric" placeholder="8376494566"></div>
+<div class="bot-actions">
+<button class="btn btn-ghost" data-bot-show="orders_fa" type="button">نمایش توکن</button>
+<button class="btn btn-ghost" data-bot-test="orders_fa" type="button">تست اتصال</button>
+<button class="btn btn-primary" data-bot-save="orders_fa" type="button">ذخیره</button>
 </div>
-<div class="scroll-x">
-<table class="admin-table" id="orders-table">
-<thead><tr><th>زمان</th><th>نام</th><th>ارتباط</th><th>خدمت</th><th>جزئیات</th><th>وضعیت</th><th>عملیات</th></tr></thead>
-<tbody id="orders-body"><tr><td colspan="7">در حال بارگذاری…</td></tr></tbody>
-</table>
-</div>
+<p class="hint" data-bot-msg="orders_fa"></p>
 </div>
 
-<div class="tabpane" id="tab-chat">
-<h1>گفت‌وگوی زنده <span class="pill"><span class="live-dot"></span>لحظه‌ای</span></h1>
-<p class="hint">پیام بازدیدکنندگان از <b>/callme/</b> و <b>/fa/callme/</b>. اینجا پاسخ دهید — بازدیدکننده همان لحظه پیام را می‌بیند (یا در بازدید بعدی). پاسخ ربات تلگرام (روی پیام #chat ریپلای کنید) هم در همین تردید می‌آید.</p>
-<div class="admin-bar">
-<label>بازدیدکننده:
-<select id="chat-visitor"><option value="">همه بازدیدکنندگان</option></select>
-</label>
-<button class="btn btn-ghost" id="chat-refresh">بروزرسانی</button>
+<div class="bot-card" data-bot="orders_en">
+<div class="bot-head"><span class="bot-ico">🎬</span>
+<div class="bot-title"><h2>بات اطلاعات مشتری (انگلیسی)</h2><p class="hint">اعلان لیدهای بخش انگلیسی: فری ادیت و درخواست طراحی سایت</p></div>
+<label class="bot-on"><input type="checkbox" data-bot-enabled="orders_en"> فعال</label></div>
+<div class="field"><label for="bot-token-orders_en">توکن بات (از @BotFather)</label>
+<input id="bot-token-orders_en" type="password" data-bot-token="orders_en" dir="ltr" autocomplete="off" spellcheck="false" placeholder="123456789:AA..."></div>
+<div class="field"><label for="bot-chatid-orders_en">chat_id مقصد</label>
+<input id="bot-chatid-orders_en" type="text" data-bot-chatid="orders_en" dir="ltr" inputmode="numeric" placeholder="8376494566"></div>
+<div class="bot-actions">
+<button class="btn btn-ghost" data-bot-show="orders_en" type="button">نمایش توکن</button>
+<button class="btn btn-ghost" data-bot-test="orders_en" type="button">تست اتصال</button>
+<button class="btn btn-primary" data-bot-save="orders_en" type="button">ذخیره</button>
 </div>
-<div class="scroll-x">
-<table class="admin-table" id="chat-table">
-<thead><tr><th>زمان</th><th>بازدیدکننده</th><th>پیام</th><th>عملیات</th></tr></thead>
-<tbody id="chat-body"><tr><td colspan="4">در حال بارگذاری…</td></tr></tbody>
-</table>
-</div>
-<div class="form-card hidden" id="chat-reply-box">
-<p class="hint" id="chat-reply-to"></p>
-<div class="field"><label for="chat-reply-text">متن پاسخ</label><textarea id="chat-reply-text" rows="2" maxlength="2000"></textarea></div>
-<button class="btn btn-primary" id="chat-send-btn">ارسال پاسخ</button>
-<p class="hint" id="chat-msg"></p>
+<p class="hint" data-bot-msg="orders_en"></p>
 </div>
 </div>
-
-<div class="tabpane" id="tab-content">
-<h1>محتوای صفحات</h1>
-<p class="hint">صفحه را انتخاب کنید، متن‌ها را ویرایش و ذخیره کنید. تغییرات ظرف چند ثانیه روی سایت اعمال می‌شود (بدون نیاز به دیپلوی).</p>
-<div class="admin-bar">
-<label>صفحه:
-<select id="page-select">
-<option value="en">انگلیسی — صفحه اصلی (/)</option>
-<option value="en_edit">انگلیسی — ادیت ویدیو (/en/services/edit.html)</option>
-<option value="en_web">انگلیسی — طراحی سایت (/en/services/web.html)</option>
-<option value="fa">فارسی — صفحه اصلی (/fa/)</option>
-<option value="fa_edit">فارسی — ادیت ویدیو (/fa/services/edit.html)</option>
-<option value="fa_web">فارسی — طراحی سایت (/fa/services/web.html)</option>
-<option value="fa_pc">فارسی — خدمات کامپیوتری (/fa/services/pc.html)</option>
-<option value="shared">مشترک — اطلاعات کسب‌وکار و کاتالوگ خدمات</option>
-</select>
-</label>
-<label class="seo-hint">عنوان و توضیح سئوی هر صفحه همین‌جاست؛ پیش‌نمایش گوگل در بخش «سئو» است.</label>
-</div>
-<div id="content-fields"></div>
-<div class="admin-bar"><button class="btn btn-primary" id="save-content-btn">ذخیره محتوای صفحه</button></div>
+<p class="hint" id="bots-msg"></p>
+<details class="faq"><summary>وب‌هوک بات چت زنده (یک بار)</summary>
+<p>برای اینکه پاسخ شما در تلگرام به گفت‌وگوی زنده سایت تبدیل شود، یک بار این آدرس را باز کنید:</p>
+<code class="bot-hook" id="chat-webhook-url" dir="ltr">https://&lt;REF&gt;.supabase.co/functions/v1/chat-webhook</code>
+</details>
 </div>
 
-<div class="tabpane" id="tab-seo">
-<h1>سئو (SEO)</h1>
-<p class="hint">عنوان و توضیح هر صفحه را ویرایش کنید و پیش‌نمایش نتیجه گوگل را همین‌جا ببینید. تغییرات فوراً روی سایت اعمال می‌شود؛ برای اینکه گوگل عنوان جدید را در نتایج جست‌وجو ببیند، بعد از ذخیره دستور <code>python tools/bake_seo.py</code> را محلی اجرا و پروژه را پوش کنید.</p>
-<div class="admin-bar">
-<label>صفحه:
-<select id="seo-page-select">
-<option value="en">انگلیسی — صفحه اصلی (/)</option>
-<option value="en_edit">انگلیسی — ادیت ویدیو (/en/services/edit.html)</option>
-<option value="en_web">انگلیسی — طراحی سایت (/en/services/web.html)</option>
-<option value="fa">فارسی — صفحه اصلی (/fa/)</option>
-<option value="fa_edit">فارسی — ادیت ویدیو (/fa/services/edit.html)</option>
-<option value="fa_web">فارسی — طراحی سایت (/fa/services/web.html)</option>
-<option value="fa_pc">فارسی — خدمات کامپیوتری (/fa/services/pc.html)</option>
-</select>
-</label>
-</div>
-<div class="form-card">
-<div class="field">
-<label for="seo-title">عنوان صفحه (حداکثر ۶۰ کاراکتر)</label>
-<input id="seo-title" type="text" maxlength="90" dir="auto" autocomplete="off">
-<p class="hint"><span id="seo-title-count">۰</span> / ۶۰ کاراکتر — عنوان بلندتر در نتایج گوگل بریده می‌شود.</p>
-</div>
-<div class="field">
-<label for="seo-desc">توضیح صفحه (حداکثر ۱۵۵ کاراکتر)</label>
-<textarea id="seo-desc" rows="3" maxlength="300" dir="auto"></textarea>
-<p class="hint"><span id="seo-desc-count">۰</span> / ۱۵۵ کاراکتر — توضیح کامل‌تر کلیک بیشتری می‌آورد.</p>
-</div>
-<div class="serp" id="serp" dir="ltr">
-<div class="serp-url" id="serp-url">https://amirlwf.ir/</div>
-<div class="serp-title" id="serp-title">عنوان صفحه</div>
-<div class="serp-desc" id="serp-desc">توضیح صفحه اینجا دیده می‌شود.</div>
-</div>
-<div class="admin-bar"><button class="btn btn-primary" id="seo-save-btn">ذخیره سئوی این صفحه</button></div>
-<p class="hint" id="seo-msg"></p>
-</div>
-
-<h2>وضعیت سئوی همه صفحه‌ها</h2>
-<div class="scroll-x">
-<table class="admin-table" id="seo-table">
-<thead><tr><th>صفحه</th><th>آدرس</th><th>عنوان</th><th>توضیح</th><th>وضعیت</th></tr></thead>
-<tbody id="seo-body"><tr><td colspan="5">در حال بارگذاری…</td></tr></tbody>
-</table>
-</div>
-<p class="hint">وضعیت «سفارشی» یعنی مقدار از پنل ذخیره شده و روی سایت فعال است؛ «پیش‌فرض» یعنی همان مقدار ثابت داخل HTML اجرا می‌شود. نقشه سایت: <code>/sitemap.xml</code> — ربات‌ها: <code>/robots.txt</code>.</p>
-</div>
-
-<div class="tabpane" id="tab-channels">
-<h1>کانال‌های تماس</h1>
-<p class="hint">صفحه را انتخاب کنید — هر صفحه کلید روشن/خاموش خودش را دارد. خودِ مقادیر (شماره و آیدی‌ها) مشترک‌اند و یک‌جا ویرایش می‌شوند.</p>
-<div class="admin-bar">
-<label>صفحه:
-<select id="channels-page-select">
-<option value="en">انگلیسی — صفحه اصلی (/)</option>
-<option value="en_edit">انگلیسی — ادیت ویدیو (/en/services/edit.html)</option>
-<option value="en_web">انگلیسی — طراحی سایت (/en/services/web.html)</option>
-<option value="fa">فارسی — صفحه اصلی (/fa/)</option>
-<option value="fa_edit">فارسی — ادیت ویدیو (/fa/services/edit.html)</option>
-<option value="fa_web">فارسی — طراحی سایت (/fa/services/web.html)</option>
-<option value="fa_pc">فارسی — خدمات کامپیوتری (/fa/services/pc.html)</option>
-</select>
-</label>
-</div>
-<div class="form-card" id="channels-fields"></div>
-<div class="admin-bar"><button class="btn btn-primary" id="save-channels-btn">ذخیره کانال‌ها</button></div>
-</div>
-
-<div class="tabpane" id="tab-portfolio">
-<h1>نمونه‌کارها</h1>
-<p class="hint">عکس بندانگشتی را آپلود کنید، لینک ویدیو (اختیاری) بزنید و عنوان و صفحه را مشخص کنید. موارد «نمایش» بلافاصله روی سایت ظاهر می‌شوند.</p>
-<div class="form-card">
-<div class="field"><label for="p-page">نمایش در صفحه</label><select id="p-page"><option value="en">انگلیسی</option><option value="fa">فارسی</option></select></div>
-<div class="field"><label for="p-title">عنوان *</label><input id="p-title" type="text" maxlength="120"></div>
-<div class="field"><label for="p-caption">توضیح کوتاه (اختیاری)</label><input id="p-caption" type="text" maxlength="500"></div>
-<div class="field"><label for="p-thumb">تصویر بندانگشتی *</label><input id="p-thumb" type="file" accept="image/*"></div>
-<div class="field"><label for="p-video">لینک ویدیو (اختیاری)</label><input id="p-video" type="url" dir="ltr" placeholder="https://…"></div>
-<div class="field"><label for="p-sort">ترتیب (عدد کوچک‌تر اول)</label><input id="p-sort" type="number" value="0" dir="ltr"></div>
-<div class="field"><label><input id="p-visible" type="checkbox" class="w-auto" checked> نمایش روی سایت</label></div>
-<button class="btn btn-primary" id="p-add-btn">آپلود و افزودن</button>
-<p class="hint" id="p-msg"></p>
-</div>
-<div class="scroll-x">
-<table class="admin-table" id="portfolio-table">
-<thead><tr><th>عکس</th><th>عنوان</th><th>صفحه</th><th>نمایش</th><th>عملیات</th></tr></thead>
-<tbody id="portfolio-body"><tr><td colspan="5">در حال بارگذاری…</td></tr></tbody>
-</table>
-</div>
-</div>
-
-<p class="hint admin-credit">پنل مدیریت سایت <a href="https://amirlwf.ir" dir="ltr">amirlwf.ir</a> — امیررضا لطفی</p>
-</section>
-</main>
-
-<div id="toast" role="status"></div>
-<script src="/assets/js/supabase-config.js"></script>
-<script src="/assets/js/supabase.min.js"></script>
-<script src="/assets/js/admin.js"></script>
-</body>
-</html>
+<p class="hint admin-credit">پنل مدیریت سایت <a href="https://amirlwf.ir" dir="ltr">amirlwf.ir</a> — امیررضا لطفی</p>
+</section>
+</main>
+
+<div id="toast" role="status"></div>
+<script src="/assets/js/supabase-config.js"></script>
+<script src="/assets/js/supabase.min.js"></script>
+<script src="/assets/js/admin.js"></script>
+</body>
+</html>

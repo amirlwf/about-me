@@ -84,10 +84,29 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "db insert failed" }), { status: 500, headers: cors });
   }
 
-  // instant notify to admin via dedicated chat bot (mock-safe when secrets absent).
-  // Owner replies to THIS message -> chat-webhook stores it as the owner reply.
-  const tgToken = Deno.env.get("CHAT_BOT_TOKEN") || "";
-  const chatId = Deno.env.get("ADMIN_CHAT_ID") || "";
+  // Instant notify via the dedicated chat bot. Credentials come from
+  // public.bot_config (admin panel, enabled=true) with function secrets as
+  // fallback. Owner replies to THIS message -> chat-webhook stores the reply.
+  let tgToken = "";
+  let chatId = "";
+  let botVia = "env";
+  try {
+    const { data: bot } = await supa
+      .from("bot_config")
+      .select("bot_token, chat_id, enabled")
+      .eq("id", "chat")
+      .maybeSingle();
+    if (bot && bot.enabled && bot.bot_token && bot.chat_id) {
+      tgToken = bot.bot_token;
+      chatId = bot.chat_id;
+      botVia = "db";
+    }
+  } catch { /* bot_config table missing -> secrets fallback */ }
+  if (!tgToken || !chatId) {
+    tgToken = Deno.env.get("CHAT_BOT_TOKEN") || "";
+    chatId = Deno.env.get("ADMIN_CHAT_ID") || "";
+    botVia = "env";
+  }
   const msg =
     `💬 <b>پیام چت #chat-${visitorId}</b>\n` +
     `${esc(text.slice(0, 800))}`;
@@ -98,7 +117,7 @@ Deno.serve(async (req: Request) => {
   await supa.from("notifications").insert({
     order_id: null,
     channel: "telegram",
-    payload: { via: "chat", visitor_id: visitorId, sent: tgSent, mock: !(tgToken && chatId) },
+    payload: { via: "chat", visitor_id: visitorId, sent: tgSent, bot: botVia, mock: !(tgToken && chatId) },
   });
 
   return new Response(JSON.stringify({ ok: true, id: data.id, at: data.created_at }), {

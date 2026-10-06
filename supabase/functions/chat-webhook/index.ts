@@ -20,10 +20,20 @@ Deno.serve(async (req: Request) => {
   if (req.method === "GET") return new Response("chat-webhook ok");
   if (req.method !== "POST") return new Response("method not allowed", { status: 405 });
 
-  const token = Deno.env.get("CHAT_BOT_TOKEN") || "";
-  if (!token) return new Response("bot not configured", { status: 200 });
-
   const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+  // chat bot token: public.bot_config (panel) first, secrets as fallback
+  let token = "";
+  try {
+    const { data: bot } = await supa
+      .from("bot_config")
+      .select("bot_token")
+      .eq("id", "chat")
+      .maybeSingle();
+    if (bot && bot.bot_token) token = bot.bot_token;
+  } catch { /* bot_config table missing -> secrets fallback */ }
+  if (!token) token = Deno.env.get("CHAT_BOT_TOKEN") || "";
+  if (!token) return new Response("bot not configured", { status: 200 });
   let update: Record<string, any>;
   try {
     update = await req.json();

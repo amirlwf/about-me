@@ -7,8 +7,8 @@ insert into public.site_content (key, value) values
 (
   'en_edit',
   '{
-    "seo_title": "Video Editing Services — Reels, Shorts & YouTube",
-    "seo_description": "Professional short-form video editing: retention-first hooks, captions, pacing, color and sound for Reels, TikTok, Shorts and YouTube. First edit free, 48-hour delivery.",
+    "seo_title": "Video Editing | Reels, Shorts and YouTube | Amir Reza Lotfi",
+    "seo_description": "Video editing by Amir Reza Lotfi: retention-first cuts for Reels, Shorts and YouTube, with captions, color and sound. First edit free.",
     "brand_name": "Amir Reza Lotfi",
     "footer_tagline": "Short-form video editor.",
     "eyebrow": "Video editing service",
@@ -42,8 +42,8 @@ insert into public.site_content (key, value) values
 (
   'en_web',
   '{
-    "seo_title": "Web Design Services — Fast, SEO-Friendly Websites",
-    "seo_description": "Web design for businesses and creators: fast, mobile-first, SEO-friendly sites and landing pages, delivered with ongoing support. Free edit of your first short included.",
+    "seo_title": "Web Design | Fast, SEO-Friendly Sites | Amir Reza Lotfi",
+    "seo_description": "Fast, mobile-first websites and landing pages by Amir Reza Lotfi, built for speed and search, with support after launch.",
     "brand_name": "Amir Reza Lotfi",
     "footer_tagline": "Short-form video editor.",
     "eyebrow": "Web design service",

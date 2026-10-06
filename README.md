@@ -19,7 +19,7 @@ The original live-chat page is preserved at `/callme/` (and `/fa/callme/`) — n
 | `/fa/services/web.html` | Web design (+5 sub-service anchors, order form) |
 | `/fa/services/pc.html` | Computer services (+5 sub-service anchors, order form) |
 | `/callme/`, `/fa/callme/` | **Preserved original chat** (fonts localized only) |
-| `/admin/` | Persian admin panel (orders, live chat, page content, **SEO tab with Google preview**, channels, portfolio; `noindex`) |
+| `/admin/` | Persian admin panel (orders, live chat, page content, **SEO tab with Google preview**, channels, portfolio, **Telegram bots tab**; `noindex`) |
 | `/data/site-content.json` | Static content defaults (SEO-safe; Supabase overrides at runtime) |
 | `/sitemap.xml`, `/robots.txt` | SEO plumbing |
 
@@ -33,10 +33,11 @@ Storage bucket.
 ### 1. Supabase project
 1. Create a project at https://supabase.com (free tier).
 2. Dashboard → SQL Editor → run `supabase/schema.sql`, then `supabase/seed.sql`,
-   then (if upgrading an existing DB) `supabase/migration_en_leads.sql`,
-   `supabase/migration_portfolio.sql`, `supabase/migration_page_content.sql`,
-   `supabase/migration_chat.sql`, `supabase/migration_en_service_pages.sql`
-   and `supabase/migration_en_web_leads.sql` (all idempotent-safe; never
+   then `supabase/migration_portfolio.sql` (storage bucket),
+   `supabase/migration_page_content.sql`, `supabase/migration_en_service_pages.sql`
+   and `supabase/migration_bots.sql`. On an *existing* DB also run
+   `supabase/migration_en_leads.sql`, `supabase/migration_chat.sql` and
+   `supabase/migration_en_web_leads.sql` (all idempotent-safe; never
    overwrites admin edits).
    The last two are required for the English section: they seed the
    `en_edit` / `en_web` content keys and let EN leads carry `service='web'`
@@ -117,6 +118,57 @@ domain (`CNAME` already points `amirlwf.ir` — never delete it). No build step.
    The admin's **SEO tab** shows a Google-style snippet preview plus a
    title/description length status table for every page.
   via `data-sc` attributes and the `[data-channels]` container.
+
+
+## Telegram bots (managed from the admin panel)
+
+Three bots, each with its own token + `chat_id`, stored in the
+`public.bot_config` table — **admin-only RLS** (anon is revoked outright), so
+the token never ships to the browser and never has to sit in function secrets:
+
+| id | used for |
+|---|---|
+| `chat` | live chat (`/fa/callme/`, `/callme/`): new visitor message + your Reply lands back in the thread |
+| `orders_fa` | customer info from the **Persian** section (order form) |
+| `orders_en` | customer info from the **English** section (free-edit + web inquiry) |
+
+Panel → **بات‌ها**: paste token, set `chat_id`, tick *فعال* → **ذخیره** →
+**تست اتصال** (calls the `bot-test` edge function, which sends a real message).
+Function secrets (`CHAT_BOT_TOKEN`, `FA_BOT_TOKEN`, …) stay as fallback, so
+notifications keep working before the panel is filled in.
+
+One-off webhook for the chat bot (the panel prints the exact URL):
+
+```
+https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<REF>.supabase.co/functions/v1/chat-webhook
+```
+
+Owner replies in the panel also broadcast instantly to an open chat window
+(`owner_reply`), with the 15s REST sync as the safety net.
+
+## Moving to a NEW Supabase project
+
+```
+python tools/set_supabase.py <project-ref> <anon-key>   # rewrites config + CSP on every page
+supabase login && supabase link --project-ref <project-ref>
+supabase functions deploy create-order --no-verify-jwt
+supabase functions deploy chat-send --no-verify-jwt
+supabase functions deploy chat-webhook --no-verify-jwt
+supabase functions deploy telegram-webhook --no-verify-jwt
+supabase functions deploy bot-test --verify-jwt
+```
+
+then run the SQL (§1–2), create the admin user, fill in the three bots in the
+panel and set the chat webhook. GitHub Pages keeps serving the repo as-is.
+
+## Personal name SEO
+
+Every page carries the identity `امیررضا لطفی` / `Amir Reza Lotfi`: page titles,
+`<meta name="author">`, the visible header brand, the FAQ entry
+«امیررضا لطفی کیست؟», hero text and a `Person` JSON-LD (`sameAs`: GitHub) on
+both home pages. Each section keeps its own name variant — the EN funnel for
+LinkedIn clients never renders Persian text, and the Persian section is the
+introduction/brand side.
 
 ## Security notes
 

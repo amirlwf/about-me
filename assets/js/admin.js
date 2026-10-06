@@ -78,6 +78,7 @@
     loadContent();
     loadChannels();
     loadPortfolio();
+    loadBots();
   }
 
   /* ---------- orders ---------- */
@@ -840,10 +841,23 @@
     var text = document.getElementById('chat-reply-text').value.trim();
     if (!text || !chatReplyTo) return;
     client.from('chat_messages').insert({ visitor_id: chatReplyTo, sender: 'owner', text: text })
+      .select('id')
       .then(function (res) {
         if (res.error) { document.getElementById('chat-msg').textContent = 'ارسال ناموفق: ' + res.error.message; return; }
         document.getElementById('chat-reply-text').value = '';
         document.getElementById('chat-msg').textContent = '';
+        // فرستادن فوری به بازدیدکننده (broadcast روی کانال همان گفت‌وگو)
+        try {
+          var row = (res.data || [])[0] || {};
+          var ch = client.channel('chat-' + chatReplyTo, { config: { broadcast: { self: false } } });
+          if (typeof ch.isJoined === 'function' && ch.isJoined()) {
+            ch.send({ type: 'broadcast', event: 'owner_reply', payload: { id: row.id, text: text } });
+          } else {
+            ch.subscribe(function (st) {
+              if (st === 'SUBSCRIBED') ch.send({ type: 'broadcast', event: 'owner_reply', payload: { id: row.id, text: text } });
+            });
+          }
+        } catch (e) { /* بدون broadcast — سینک دوره‌ای پوشش می‌دهد */ }
         showToast('پاسخ ارسال شد — بازدیدکننده چند ثانیه دیگر می‌بیند.');
         loadChat();
       });
@@ -863,6 +877,74 @@
       })
       .subscribe();
   }
+
+  /* ---------- bots (bot_config: tokens live in the DB, admin-only RLS) ---------- */
+  function botMsg(id, text, bad) {
+    var el = document.querySelector('[data-bot-msg="' + id + '"]');
+    if (!el) return;
+    el.textContent = text || '';
+    el.classList.toggle('text-danger', !!bad);
+  }
+  function loadBots() {
+    var hook = document.getElementById('chat-webhook-url');
+    if (hook && window.SITE_CONFIG && window.SITE_CONFIG.SUPABASE_URL) {
+      hook.textContent = window.SITE_CONFIG.SUPABASE_URL + '/functions/v1/chat-webhook';
+    }
+    client.from('bot_config').select('id, bot_token, chat_id, enabled').then(function (res) {
+      var msg = document.getElementById('bots-msg');
+      if (res.error) {
+        if (msg) msg.textContent = 'خطا: ' + res.error.message + ' — اول migration_bots.sql را در SQL Editor اجرا کنید.';
+        return;
+      }
+      if (msg) msg.textContent = (res.data || []).length ? '' : 'هنوز باتی ثبت نشده است.';
+      (res.data || []).forEach(function (b) {
+        var tok = document.querySelector('[data-bot-token="' + b.id + '"]');
+        var cid = document.querySelector('[data-bot-chatid="' + b.id + '"]');
+        var en = document.querySelector('[data-bot-enabled="' + b.id + '"]');
+        if (tok) tok.value = b.bot_token || '';
+        if (cid) cid.value = b.chat_id || '';
+        if (en) en.checked = !!b.enabled;
+        botMsg(b.id, b.bot_token ? 'ذخیره شده ✓' : 'توکن وارد نشده', !b.bot_token);
+      });
+    });
+  }
+  function saveBot(id) {
+    var tok = (document.querySelector('[data-bot-token="' + id + '"]') || {}).value || '';
+    var cid = (document.querySelector('[data-bot-chatid="' + id + '"]') || {}).value || '';
+    var en = !!(document.querySelector('[data-bot-enabled="' + id + '"]') || {}).checked;
+    if (!tok.trim() || !cid.trim()) { botMsg(id, 'توکن و chat_id هر دو لازم است.', true); return; }
+    botMsg(id, 'در حال ذخیره…');
+    client.from('bot_config')
+      .update({ bot_token: tok.trim(), chat_id: cid.trim(), enabled: en, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .then(function (res) {
+        if (res.error) { botMsg(id, 'خطا: ' + res.error.message, true); return; }
+        botMsg(id, 'ذخیره شد ✓', false);
+        showToast('ذخیره شد — نوتیف بات «' + id + '» فعال شد.');
+      });
+  }
+  function testBot(id) {
+    botMsg(id, 'در حال ارسال پیام آزمایشی…');
+    client.functions.invoke('bot-test', { body: { id: id } }).then(function (res) {
+      if (res.error) { botMsg(id, 'خطا: ' + res.error.message, true); return; }
+      var d = res.data || {};
+      if (d.ok) botMsg(id, 'پیام آزمایشی ارسال شد ✓ (منبع: ' + (d.via === 'db' ? 'دیتابیس' : 'secrets') + ')', false);
+      else botMsg(id, 'ناموفق: ' + (d.error || 'بات تنظیم نشده'), true);
+    });
+  }
+  var botsGrid = document.getElementById('bots-grid');
+  if (botsGrid) {
+    botsGrid.addEventListener('click', function (ev) {
+      var el = ev.target.closest ? ev.target.closest('[data-bot-save],[data-bot-test],[data-bot-show]') : null;
+      if (!el) return;
+      var id = el.getAttribute('data-bot-save') || el.getAttribute('data-bot-test') || el.getAttribute('data-bot-show');
+      if (el.hasAttribute('data-bot-save')) { saveBot(id); return; }
+      if (el.hasAttribute('data-bot-test')) { testBot(id); return; }
+      var tok = document.querySelector('[data-bot-token="' + id + '"]');
+      if (tok) { tok.type = tok.type === 'password' ? 'text' : 'password'; }
+    });
+  }
+
   /* ---------- SEO tab: per-page title/description + Google preview ----------
      Values live in site_content (same keys the site applies at runtime);
      tools/bake_seo.py then writes them into the static <title>/<meta> that

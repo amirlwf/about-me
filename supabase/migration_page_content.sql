@@ -25,7 +25,7 @@ update public.site_content
 set value = value
   || '{"brand_name":"Amir Reza Lotfi"}'::jsonb
   || '{"footer_tagline":"Short-form video editor."}'::jsonb
-  || '{"seo_title":"Short-Form Video Editor | Get 1 Free Edit"}'::jsonb
+  || '{"seo_title":"Amir Reza Lotfi | Short-Form Video Editor — Get 1 Free Edit"}'::jsonb
   || '{"seo_description":"Short-form video editor for Reels, TikTok and Shorts. Get your first reel edited FREE in 48 hours — no commitment."}'::jsonb
 where key = 'en_home'
   and not (value ? 'seo_title');
@@ -33,8 +33,8 @@ where key = 'en_home'
 -- ---------- 3. fa_home: seo + cards + faq + form defaults (keep existing texts) ----------
 update public.site_content
 set value = value
-  || '{"seo_title":"خدمات کامپیوتر و طراحی سایت در هشتگرد | امیر"}'::jsonb
-  || '{"seo_description":"نصب ویندوز و پرینتر در محل، طراحی سایت ارزان و ادیت ویدیو حرفه‌ای در هشتگرد و حومه. ثبت سفارش آنلاین با پیگیری لحظه‌ای."}'::jsonb
+  || '{"seo_title":"امیررضا لطفی | خدمات کامپیوتر و طراحی سایت در هشتگرد"}'::jsonb
+  || '{"seo_description":"امیررضا لطفی (امیر): ادیت ویدیو، طراحی سایت ارزان و نصب ویندوز و پرینتر در محل در هشتگرد و حومه. ثبت سفارش آنلاین با پیگیری زنده."}'::jsonb
   || '{"card_edit_title":"ادیت ویدیو"}'::jsonb
   || '{"card_edit_text":"تدوین حرفه‌ای ویدیو برای یوتیوب، اینستاگرام و تبلیغات؛ زیرنویس فارسی، اصلاح رنگ و ریتم مناسب هر پلتفرم."}'::jsonb
   || '{"card_web_title":"طراحی سایت"}'::jsonb
@@ -62,7 +62,7 @@ where key = 'fa_home'
 -- ---------- 4. new service-page keys (only when missing — never overwrite admin edits) ----------
 insert into public.site_content (key, value) values
 ('fa_edit', '{
-  "seo_title": "ادیت ویدیو حرفه‌ای | تدوین یوتیوب و ریلز",
+  "seo_title": "ادیت ویدیو حرفه‌ای | تدوین یوتیوب و ریلز | امیررضا لطفی",
   "seo_description": "تدوین ویدیوی یوتیوب، ریلز اینستاگرام، تیزر تبلیغاتی و زیرنویس فارسی با اصلاح رنگ حرفه‌ای. سفارش آنلاین با تحویل منظم.",
   "hero_title": "ادیت ویدیو حرفه‌ای",
   "intro_title": "ادیت یعنی نگه داشتن مخاطب",
@@ -93,7 +93,7 @@ insert into public.site_content (key, value) values
   "form_title": "ثبت سفارش ادیت ویدیو"
 }'::jsonb),
 ('fa_web', '{
-  "seo_title": "طراحی سایت ارزان و سئومحور | سفارش سایت",
+  "seo_title": "طراحی سایت ارزان و سئومحور | امیررضا لطفی",
   "seo_description": "طراحی سایت شرکتی، فروشگاهی و لندینگ‌پیج؛ سریع، واکنش‌گرا و سئومحور با پشتیبانی بعد از تحویل. مشاوره و برآورد رایگان.",
   "hero_title": "طراحی سایت ارزان و سئومحور",
   "intro_title": "چرا سایت از من؟",
@@ -123,7 +123,7 @@ insert into public.site_content (key, value) values
   "form_title": "ثبت سفارش طراحی سایت"
 }'::jsonb),
 ('fa_pc', '{
-  "seo_title": "خدمات کامپیوتر در هشتگرد | نصب ویندوز و پرینتر",
+  "seo_title": "خدمات کامپیوتر در هشتگرد | امیررضا لطفی",
   "seo_description": "نصب ویندوز، نصب و عیب‌یابی پرینتر، افزایش سرعت سیستم و بکاپ اطلاعات در محل شما در هشتگرد و حومه. ثبت سفارش آنلاین.",
   "hero_title": "خدمات کامپیوتر در هشتگرد",
   "intro_title": "چه کارهایی انجام می‌شود؟",
