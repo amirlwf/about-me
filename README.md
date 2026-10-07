@@ -212,3 +212,27 @@ python3 tools/qa_pages.py # CDP: 390px+1366px overflow, JS errors, broken resour
 2. Deploy the two Edge Functions + secrets (§2).
 3. Create the Telegram bot + webhook (§3) — currently mocked behind placeholders.
 4. Run `test-notify.sh`, then merge the PR.
+
+## Content pages (CMS)
+
+پنل ادمین حالا مثل وردپرس صفحه می‌سازد، بدون اینکه ظاهرش شبیه وردپرس باشد.
+
+| توانایی | کجاست |
+| --- | --- |
+| ساخت / ویرایش صفحه | پنل ← **صفحات** |
+| ساخت صفحه با بلوک (Hero, متن, تصویر, گالری, کارت, CTA, FAQ, ویدیو…) | پنل ← صفحات ← `+ صفحه جدید` |
+| پیش‌نویس / انتشار / انتشار زمان‌بندی‌شده | پنل ← صفحات ← کارت کناری «انتشار» |
+| سئوی هر صفحه (title/description/OG) | پنل ← صفحات ← «سئوی این صفحه» |
+| منوها / ناوبری (هدر و فوترِ فارسی و انگلیسی) | پنل ← **منوها** |
+| آپلود و مدیریت تصاویر | پنل ← **مدیا** (bucket عمومی `media`) |
+
+**راه‌اندازی (یک بار):** `supabase/migration_pages.sql` را در SQL Editor اجرا کنید —
+جدول‌های `pages` / `menus` / `media` با RLS فقط‌ادمین (جز SELECT عمومیِ سطرهای منتشرشده)
+و bucket `media` را می‌سازد.
+
+**لینک صفحات:** `https://amirlwf.ir/p/?slug=<slug>` — روت واقعی است، پس GitHub Pages
+جواب ۲۰۰ می‌دهد و گوگل ایندکس می‌کند. رندر سمت کلاینت در `assets/js/page-render.js`
+(سلسله‌مراتب: `p/index.html` → `page-render.js` → `blocks.css`).
+
+**محدودیت فعلی:** منوها فقط روی صفحاتِ همین CMS فوری‌اند؛ منوی صفحات استاتیکِ موجود
+بعد از اجرای build و پوش اعمال می‌شود (فاز بعد: اجرای خودکار با GitHub Actions).

@@ -95,6 +95,9 @@
 
 <button class="tab" data-tab="portfolio" role="tab">نمونه‌کارها</button>
 <button class="tab" data-tab="bots" role="tab">بات‌ها</button>
+<button class="tab" data-tab="pages" role="tab">صفحات</button>
+<button class="tab" data-tab="menus" role="tab">منوها</button>
+<button class="tab" data-tab="media" role="tab">مدیا</button>
 
 </div>
 
@@ -482,6 +485,102 @@
 <p>برای اینکه پاسخ شما در تلگرام به گفت‌وگوی زنده سایت تبدیل شود، یک بار این آدرس را باز کنید:</p>
 <code class="bot-hook" id="chat-webhook-url" dir="ltr">https://&lt;REF&gt;.supabase.co/functions/v1/chat-webhook</code>
 </details>
+</div>
+
+<!-- ==================== صفحات (block-based pages) ==================== -->
+<div class="tabpane" id="tab-pages">
+<h1>صفحات</h1>
+<p class="hint">صفحهٔ جدید بسازید، با بلوک‌ها بچینید، پیش‌نویس را ذخیره کنید و وقتی آماده شد منتشرش کنید. برای «زمان‌بندی انتشار» تاریخ و ساعت بدهید تا خودکار زنده شود. لینک هر صفحه: <code dir="ltr">amirlwf.ir/p/?slug=…</code></p>
+
+<div class="cms-toolbar">
+  <button class="btn btn-primary" id="pg-new" type="button">+ صفحه جدید</button>
+  <span class="hint" id="pg-list-msg"></span>
+</div>
+<div class="pg-list" id="pg-list"></div>
+
+<div class="pg-editor hidden" id="pg-editor">
+  <div class="pg-editor-head">
+    <button class="btn btn-ghost" id="pg-back" type="button">→ بازگشت به فهرست</button>
+    <span class="pg-badge" id="pg-badge">پیش‌نویس</span>
+  </div>
+
+  <div class="pg-grid">
+    <div class="pg-main">
+      <div class="form-card">
+        <div class="field"><label for="pg-title">عنوان صفحه *</label>
+          <input id="pg-title" type="text" maxlength="160"></div>
+        <div class="field"><label for="pg-slug">شناسهٔ لینک (slug) *</label>
+          <input id="pg-slug" type="text" dir="ltr" maxlength="120" placeholder="my-page">
+          <p class="hint" id="pg-url" dir="ltr">amirlwf.ir/p/?slug=</p></div>
+        <div class="field"><label for="pg-lang">زبان صفحه</label>
+          <select id="pg-lang"><option value="fa">فارسی (راست‌به‌چپ)</option><option value="en">English (LTR)</option></select></div>
+      </div>
+
+      <div class="pg-palette">
+        <span class="hint">افزودن بلوک:</span>
+        <div class="pg-palette-btns" id="pg-palette"></div>
+      </div>
+      <div class="pg-blocks" id="pg-blocks"></div>
+    </div>
+
+    <aside class="pg-side">
+      <div class="form-card">
+        <h2 class="pg-h2">انتشار</h2>
+        <div class="field"><label for="pg-status-sel">وضعیت</label>
+          <select id="pg-status-sel">
+            <option value="draft">پیش‌نویس</option>
+            <option value="published">منتشر شده</option>
+            <option value="scheduled">زمان‌بندی‌شده</option>
+          </select></div>
+        <div class="field hidden" id="pg-at-field"><label for="pg-at">زمان انتشار (به وقت مرورگر)</label>
+          <input id="pg-at" type="datetime-local"></div>
+        <div class="field"><label><input type="checkbox" id="pg-sitemap" class="w-auto" checked> نمایش در sitemap</label></div>
+        <button class="btn btn-primary" id="pg-save" type="button">ذخیره</button>
+        <p class="hint" id="pg-msg"></p>
+      </div>
+
+      <div class="form-card">
+        <h2 class="pg-h2">سئوی این صفحه</h2>
+        <div class="field"><label for="pg-seo-title">عنوان سئو (≤۶۰)</label>
+          <input id="pg-seo-title" type="text" maxlength="60"></div>
+        <div class="field"><label for="pg-seo-desc">توضیح سئو (≤۱۵۵)</label>
+          <textarea id="pg-seo-desc" rows="3" maxlength="155"></textarea></div>
+        <div class="field"><label for="pg-og">تصویر شبکه‌های اجتماعی (URL)</label>
+          <input id="pg-og" type="url" dir="ltr" placeholder="https://…"></div>
+        <button class="btn btn-ghost" id="pg-seo-save" type="button">ذخیرهٔ سئو</button>
+        <p class="hint" id="pg-seo-msg"></p>
+      </div>
+
+      <div class="form-card">
+        <h2 class="pg-h2">بلوک انتخاب‌شده</h2>
+        <div id="pg-props"><p class="hint">روی یک بلوک از فهرست کلیک کنید.</p></div>
+      </div>
+    </aside>
+  </div>
+</div>
+</div>
+
+<!-- ==================== منوها ==================== -->
+<div class="tabpane" id="tab-menus">
+<h1>منوها و ناوبری</h1>
+<p class="hint">چهار لوکیشن مستقل: هدر و فوترِ هر زبان. تغییرات فوراً روی صفحات ساخته‌شده در همین پنل اعمال می‌شود؛ برای صفحات استاتیکِ موجود، تغییر بعد از اجرای اسکریپت build و پوش اعمال می‌شود (فاز بعد: خودکار).</p>
+<div class="menus-wrap" id="menus-wrap"></div>
+<p class="hint" id="menus-msg"></p>
+</div>
+
+<!-- ==================== مدیا ==================== -->
+<div class="tabpane" id="tab-media">
+<h1>مدیا (تصاویر و فایل‌ها)</h1>
+<p class="hint">فایل‌ها در bucket عمومی <code>media</code> ذخیره می‌شوند و لینک مستقیمشان را می‌توانید در هر بلوک یا صفحه‌ای بگذارید. فقط ادمین می‌تواند آپلود یا حذف کند.</p>
+<div class="form-card">
+  <div class="field"><label for="md-file">انتخاب فایل (چندتا هم می‌شود)</label>
+    <input id="md-file" type="file" accept="image/*" multiple></div>
+  <div class="field"><label for="md-alt">متن جایگزین (Alt) برای همین آپلود</label>
+    <input id="md-alt" type="text" maxlength="200"></div>
+  <button class="btn btn-primary" id="md-upload" type="button">آپلود</button>
+  <p class="hint" id="md-msg"></p>
+</div>
+<div class="md-grid" id="md-grid"></div>
 </div>
 
 <p class="hint admin-credit">پنل مدیریت سایت <a href="https://amirlwf.ir" dir="ltr">amirlwf.ir</a> — امیررضا لطفی</p>

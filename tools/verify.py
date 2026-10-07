@@ -494,6 +494,33 @@ def main():
                       "bot_config", "functions.invoke('bot-test'"]:
             check("admin.js " + token, token in adm_j)
 
+        # ---- block-based pages: dynamic route /p/?slug= ----
+        _pr = os.path.join(ROOT, "p", "index.html")
+        html_dyn = open(_pr, encoding="utf-8", newline="").read() if os.path.isfile(_pr) else ""
+        check("dyn route file exists", bool(html_dyn), "p/index.html missing")
+        check("dyn route csp", "Content-Security-Policy" in html_dyn)
+        check("dyn route no inline script",
+              "<script>" not in html_dyn, "inline script in /p/")
+        check("dyn route styles", "/assets/css/blocks.css" in html_dyn
+              and "/assets/css/site.css" in html_dyn)
+        check("dyn route renderer", "/assets/js/page-render.js" in html_dyn)
+        check("dyn route author meta", 'name="author"' in html_dyn)
+        for f in ("assets/js/page-render.js", "assets/css/blocks.css",
+                  "supabase/migration_pages.sql"):
+            check("asset " + f, os.path.isfile(os.path.join(ROOT, *f.split("/"))))
+
+        # ---- pages schema: tables + RLS + storage ----
+        _mig = os.path.join(ROOT, "supabase", "migration_pages.sql")
+        if os.path.isfile(_mig):
+            m = open(_mig, encoding="utf-8", newline="").read()
+            check("pages table", "create table if not exists public.pages" in m)
+            check("menus table", "create table if not exists public.menus" in m)
+            check("media table", "create table if not exists public.media" in m)
+            check("pages RLS", "pages_admin_all" in m and "pages_public_live" in m)
+            check("menus RLS", "menus_admin_all" in m and "menus_public_read" in m)
+            check("media RLS + bucket", "media_admin_all" in m and "storage.buckets" in m)
+            check("scheduled publish rule", "publish_at <= now()" in m)
+
         # ================= LIVE CHAT: instant owner reply =================
         for f in ["callme/index.html", "fa/callme/index.html"]:
             html = open(os.path.join(ROOT, *f.split("/")), encoding="utf-8").read()

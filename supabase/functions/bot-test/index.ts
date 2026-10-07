@@ -44,16 +44,25 @@ function isAdmin(req: Request): boolean {
   return md.role === "admin" || am.role === "admin";
 }
 
-async function sendTelegram(token: string, chatId: string, text: string): Promise<boolean> {
+async function sendTelegram(
+  token: string,
+  chatId: string,
+  text: string,
+): Promise<{ ok: boolean; status: number; detail: string }> {
   try {
     const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
     });
-    return r.ok;
-  } catch {
-    return false;
+    let detail = "";
+    try {
+      const j = await r.json();
+      if (j && j.description) detail = String(j.description);
+    } catch { /* non-json body */ }
+    return { ok: r.ok, status: r.status, detail };
+  } catch (e) {
+    return { ok: false, status: 0, detail: String(e) };
   }
 }
 
@@ -104,9 +113,18 @@ Deno.serve(async (req: Request) => {
     via = "env";
   }
 
+  // say precisely what is missing instead of a generic "not configured"
   if (!token || !chatId) {
+    const missing = !token && !chatId ? "توکن و chat_id"
+      : !token ? "توکن بات (Bot Token)" : "chat_id";
     return new Response(
-      JSON.stringify({ ok: false, configured: false, error: "bot token / chat id خالی است" }),
+      JSON.stringify({
+        ok: false,
+        configured: false,
+        fields: { token: !!token, chat_id: !!chatId },
+        enabled,
+        error: `${missing} ثبت نشده است — در همین کارت پر و ذخیره کنید.`,
+      }),
       { status: 200, headers: { ...cors, "Content-Type": "application/json" } },
     );
   }
@@ -118,10 +136,25 @@ Deno.serve(async (req: Request) => {
     `منبع: ${via === "db" ? "دیتابیس (پنل ادمین)" : "secrets پروژه"}\n` +
     `زمان: ${new Date().toISOString().slice(0, 19).replace("T", " ")}`;
 
-  const sent = await sendTelegram(token, chatId, text);
+  const res = await sendTelegram(token, chatId, text);
+
+  // enabled=false is the silent killer: the test still sends, but the real
+  // order/chat notifications are skipped — say so in plain Persian.
+  const disabledNote = enabled
+    ? null
+    : "ذخیره شده ولی غیرفعال است — نوتیف‌های واقعی ارسال نمی‌شوند؛ کلید «فعال» را بزنید و ذخیره کنید.";
 
   return new Response(
-    JSON.stringify({ ok: sent, configured: true, via, enabled, error: sent ? null : "telegram rejected token/chat id" }),
+    JSON.stringify({
+      ok: res.ok,
+      configured: true,
+      via,
+      enabled,
+      fields: { token: true, chat_id: true },
+      telegram: res.detail || null,
+      error: res.ok ? disabledNote
+        : `تلگرام رد کرد (${res.status}): ${res.detail || "بدون توضیح"} — معمولاً توکن ناقص یا chat_id اشتباه است.`,
+    }),
     { status: 200, headers: { ...cors, "Content-Type": "application/json" } },
   );
 });

@@ -115,3 +115,78 @@ select, input[type="text"], input[type="email"], input[type="password"], input[t
 .bot-actions .btn { flex: 1 1 auto; }
 .bot-hook { display: block; direction: ltr; text-align: left; background: #f1f5f9; border: 1px solid #e2e8f0;
   border-radius: 8px; padding: 10px 12px; font-size: .85rem; word-break: break-all; margin-top: 6px; }
+
+
+/* ================= CMS: pages / menus / media ================= */
+.cms-toolbar { display: flex; align-items: center; gap: 14px; margin: 14px 0; flex-wrap: wrap; }
+.pg-list { display: flex; flex-direction: column; gap: 10px; }
+.pg-row {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  background: var(--surface, rgba(255,255,255,.05));
+  border: 1px solid var(--glass-border, rgba(255,255,255,.1));
+  border-radius: 14px; padding: 12px 14px;
+}
+.pg-row-main { display: flex; flex-direction: column; gap: 4px; min-width: 200px; flex: 1; }
+.pg-slug { font-size: .82rem; opacity: .65; }
+.pg-meta { font-size: .8rem; opacity: .55; }
+.pg-badge {
+  font-size: .78rem; padding: 5px 10px; border-radius: 999px;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+}
+.pg-badge.is-live { background: rgba(80,200,120,.18); border-color: rgba(80,200,120,.5); color: #7dffb0; }
+.pg-row-actions { display: flex; gap: 6px; }
+
+.pg-editor-head { display: flex; align-items: center; gap: 14px; margin: 6px 0 16px; }
+.pg-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, .9fr); gap: 18px; align-items: start; }
+.pg-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 12px; }
+.pg-h2 { font-size: 1.02rem; margin: 0 0 10px; }
+.pg-palette { margin: 14px 0 10px; }
+.pg-palette-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.pg-blocks { display: flex; flex-direction: column; gap: 10px; }
+.pg-block {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px; padding: 12px 14px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.pg-block:hover { background: rgba(255,255,255,.07); }
+.pg-block.is-sel { border-color: var(--turquoise, #40e0d0); background: rgba(64,224,208,.08); }
+.pg-block-label { font-weight: 700; font-size: .92rem; }
+.pg-block-sum { font-size: .85rem; opacity: .6; flex: 1; min-width: 120px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.pg-block-acts { display: flex; gap: 4px; }
+.pg-li {
+  border: 1px dashed rgba(255,255,255,.16); border-radius: 12px;
+  padding: 10px 12px; margin-bottom: 10px;
+}
+.pg-li-head { display: flex; justify-content: space-between; align-items: center;
+  font-size: .85rem; opacity: .8; margin-bottom: 8px; }
+
+.menus-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.mn-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.mn-item {
+  display: grid; grid-template-columns: 1fr 1.3fr auto; gap: 8px;
+  align-items: center; margin-bottom: 8px;
+}
+.mn-item input[type=text] { width: 100%; }
+.mn-tab { font-size: .82rem; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.mn-acts { display: flex; gap: 4px; }
+.mn-foot { display: flex; gap: 10px; margin-top: 10px; }
+
+.md-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; margin-top: 16px; }
+.md-card {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;
+}
+.md-card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; background: #000; }
+.md-file { aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+.md-info { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.md-name { font-size: .84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-info input { font-size: .84rem; }
+.md-acts { display: flex; gap: 6px; padding: 0 12px 12px; }
+
+@media (max-width: 900px) {
+  .pg-grid { grid-template-columns: 1fr; }
+  .pg-side { position: static; }
+  .mn-item { grid-template-columns: 1fr; }
+}
